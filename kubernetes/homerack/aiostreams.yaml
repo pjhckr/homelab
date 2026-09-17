@@ -1,0 +1,109 @@
+# aiostreams (Stremio addon aggregator) on homerack.
+# Data on the SSD (local-path-ssd), restored 2026-09-15 from ~/homenix-backup/aiostreams-sda3-20260915.tar.gz
+# (db.sqlite + mapping caches as of 14 Sep, copied off the old sda3 before the SSD wipe).
+# Its .env is the Secret default/aiostreams-env (loaded via envFrom); BASE_URL points at its public hostname.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: aiostreams-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-ssd
+    resources:
+        requests:
+            storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: aiostreams
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # single RWO volume with a SQLite db
+    selector:
+        matchLabels:
+            app: aiostreams
+    template:
+        metadata:
+            labels:
+                app: aiostreams
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            containers:
+                - name: aiostreams
+                  # Upstream publishes no stable version tags; :latest matches the previous setups.
+                  image: ghcr.io/viren070/aiostreams:latest
+                  envFrom:
+                    - secretRef:
+                        name: aiostreams-env
+                  ports:
+                    - containerPort: 3000
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 50m
+                        memory: 128Mi
+                    limits:
+                        memory: 512Mi
+                  # Verifies its anime database at startup (~90s) before opening port 3000.
+                  startupProbe:
+                    httpGet:
+                        path: /
+                        port: 3000
+                    failureThreshold: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                        path: /
+                        port: 3000
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /
+                        port: 3000
+                    periodSeconds: 20
+                  volumeMounts:
+                    - name: data
+                      mountPath: /app/data
+            volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: aiostreams-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: aiostreams
+    namespace: default
+spec:
+    ports:
+        - port: 3000
+          targetPort: 3000
+          name: http
+    selector:
+        app: aiostreams
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: aiostreams
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - aiostreams.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: aiostreams
+              port: 3000
+          # Aggregating many upstream addons can take longer than Envoy's default 15s.
+          timeouts:
+            request: 0s

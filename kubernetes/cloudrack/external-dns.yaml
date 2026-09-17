@@ -1,0 +1,104 @@
+# external-dns: publishes Gateway API HTTPRoute hostnames to Cloudflare, pointing each at its
+# parent Gateway's address (cloudrack-gateway -> cloudrack's Tailscale IP). Only manages records it owns
+# (TXT owner "jainrack"); hand-made records in the zone are left alone.
+# Cloudflare token: secret kube-system/cloudflare-api-token (key api-token).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: external-dns
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+    name: external-dns
+rules:
+    - apiGroups:
+        - ""
+      resources:
+        - namespaces
+      verbs:
+        - get
+        - watch
+        - list
+    - apiGroups:
+        - gateway.networking.k8s.io
+      resources:
+        - gateways
+        - httproutes
+      verbs:
+        - get
+        - watch
+        - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+    name: external-dns-viewer
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: external-dns
+subjects:
+    - kind: ServiceAccount
+      name: external-dns
+      namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: external-dns
+    namespace: kube-system
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            app.kubernetes.io/name: external-dns
+    template:
+        metadata:
+            labels:
+                app.kubernetes.io/name: external-dns
+        spec:
+            serviceAccountName: external-dns
+            nodeSelector:
+                kubernetes.io/hostname: cloudrack
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                seccompProfile:
+                    type: RuntimeDefault
+            containers:
+                - name: external-dns
+                  image: registry.k8s.io/external-dns/external-dns:v0.22.0
+                  args:
+                    - --log-level=info
+                    - --log-format=text
+                    # Reconcile immediately on changes; hourly pass only catches drift made by hand in Cloudflare.
+                    - --events
+                    - --interval=1h
+                    - --source=gateway-httproute
+                    - --provider=cloudflare
+                    - --domain-filter=${DOMAIN}
+                    - --policy=sync
+                    - --registry=txt
+                    - --txt-owner-id=jainrack
+                  env:
+                    - name: CF_API_TOKEN
+                      valueFrom:
+                        secretKeyRef:
+                            name: cloudflare-api-token
+                            key: api-token
+                  resources:
+                    requests:
+                        cpu: 10m
+                        memory: 32Mi
+                    limits:
+                        memory: 128Mi
+                  securityContext:
+                    allowPrivilegeEscalation: false
+                    readOnlyRootFilesystem: true
+                    capabilities:
+                        drop:
+                            - ALL

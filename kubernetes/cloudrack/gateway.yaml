@@ -1,0 +1,123 @@
+# Envoy Gateway entry point on cloudrack's Tailscale IP (tailnet-only).
+# Controller: Helm release "eg" in kube-system (chart gateway-helm v1.9.1), pinned to cloudrack.
+# It serves both Gateways; homerack's is defined in kubernetes/homerack/gateway.yaml.
+#
+# The release is not managed by this file — reinstall it with:
+#   helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.9.1 -n kube-system \
+#     --set 'deployment.pod.nodeSelector.kubernetes\.io/hostname=cloudrack'
+# Gateway API + Envoy Gateway CRDs are installed by the chart's crds/ directory, so Helm neither
+# labels nor deletes them: an uninstall leaves Gateways and HTTPRoutes intact. It does, however,
+# orphan the per-Gateway proxy Deployments/Services it created — delete those by hand after an
+# uninstall, or they keep claiming the same externalIPs as the new ones.
+# TLS: the wildcard certificate issued by cert-manager (see cert-manager.yaml).
+# DNS: external-dns publishes each HTTPRoute hostname -> this Gateway's address (see external-dns.yaml).
+#
+# NOTE: cloudrack's Tailscale IP appears three times below — externalIPs, the Gateway address and
+# the external-dns target — all encrypted. If cloudrack rejoins Tailscale with a new identity,
+# update them with scripts/sops-edit.sh and re-deploy.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+    name: cloudrack-proxy-config
+    namespace: default
+spec:
+    provider:
+        type: Kubernetes
+        kubernetes:
+            envoyDeployment:
+                replicas: 1
+                pod:
+                    nodeSelector:
+                        kubernetes.io/hostname: cloudrack
+                container:
+                    resources:
+                        requests:
+                            cpu: 50m
+                            memory: 64Mi
+                        limits:
+                            memory: 256Mi
+            envoyService:
+                type: LoadBalancer
+                patch:
+                    type: StrategicMerge
+                    value:
+                        spec:
+                            externalIPs:
+                                - ${CLOUDRACK_TS_IP}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+    name: eg
+spec:
+    controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    # No parametersRef: shared by both Gateways, each picks its EnvoyProxy via spec.infrastructure.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+    name: cloudrack-gateway
+    namespace: default
+    annotations:
+        # external-dns v0.22+ uses the "external-dns.kubernetes.io/" prefix (the old ".alpha." prefix is ignored).
+        external-dns.kubernetes.io/cloudflare-proxied: "false"
+        external-dns.kubernetes.io/target: ${CLOUDRACK_TS_IP}
+spec:
+    gatewayClassName: eg
+    infrastructure:
+        parametersRef:
+            group: gateway.envoyproxy.io
+            kind: EnvoyProxy
+            name: cloudrack-proxy-config
+    addresses:
+        - type: IPAddress
+          value: ${CLOUDRACK_TS_IP}
+    listeners:
+        - name: http
+          protocol: HTTP
+          port: 80
+          allowedRoutes:
+            namespaces:
+                from: All
+        - name: https-wildcard
+          protocol: HTTPS
+          port: 443
+          hostname: '*.${DOMAIN}'
+          tls:
+            mode: Terminate
+            certificateRefs:
+                - name: wildcard-tls
+          allowedRoutes:
+            namespaces:
+                from: All
+---
+# Redirect all plain-HTTP requests to HTTPS. No hostnames on purpose, so external-dns creates no record for it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: https-redirect
+    namespace: default
+spec:
+    parentRefs:
+        - name: cloudrack-gateway
+          sectionName: http
+    rules:
+        - filters:
+            - type: RequestRedirect
+              requestRedirect:
+                scheme: https
+                statusCode: 301
+---
+# HTTP/3 (QUIC) on the HTTPS listener: adds 443/UDP on the Envoy Service and an Alt-Svc: h3 header.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+    name: cloudrack-http3
+    namespace: default
+spec:
+    targetRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: cloudrack-gateway
+          sectionName: https-wildcard
+    http3: {}

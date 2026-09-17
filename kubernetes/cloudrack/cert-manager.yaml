@@ -1,0 +1,55 @@
+# cert-manager: Helm release "cert-manager" in kube-system (chart v1.21.1), pinned to cloudrack,
+# DNS-01 self-checks via 1.1.1.1/1.0.0.1.
+#
+# The release is not managed by this file — reinstall it with:
+#   helm repo add jetstack https://charts.jetstack.io
+#   helm install cert-manager jetstack/cert-manager --version v1.21.1 -n kube-system \
+#     --set crds.enabled=true \
+#     --set 'nodeSelector.kubernetes\.io/hostname=cloudrack' \
+#     --set 'cainjector.nodeSelector.kubernetes\.io/hostname=cloudrack' \
+#     --set 'webhook.nodeSelector.kubernetes\.io/hostname=cloudrack' \
+#     --set 'startupapicheck.nodeSelector.kubernetes\.io/hostname=cloudrack' \
+#     --set-json 'extraArgs=["--dns01-recursive-nameservers-only","--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"]'
+# The CRDs carry helm.sh/resource-policy=keep, so they survive an uninstall — but they also keep the
+# old meta.helm.sh/release-namespace, which blocks a reinstall into a different namespace until you
+# run: kubectl annotate crd <cert-manager.io CRDs> meta.helm.sh/release-namespace=<ns> --overwrite
+#
+# Cloudflare token: kube-system/cloudflare-api-token, declared in external-dns.yaml and shared with
+# external-dns. kube-system is also cert-manager's cluster-resource-namespace, so the ClusterIssuer
+# resolves the token there — one copy for both consumers.
+#
+# The ACME account key (kube-system/letsencrypt-account-key) is created and owned by cert-manager
+# itself on first registration, so it is deliberately not declared here. Deleting it would make
+# cert-manager register a new Let's Encrypt account.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+    name: letsencrypt-cloudflare
+spec:
+    acme:
+        email: ${ACME_EMAIL}
+        server: https://acme-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+            name: letsencrypt-account-key
+        solvers:
+            - dns01:
+                cloudflare:
+                    apiTokenSecretRef:
+                        name: cloudflare-api-token
+                        key: api-token
+---
+# Wildcard cert shared by every Gateway in the default namespace (cloudrack and homerack).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+    name: wildcard-tls
+    namespace: default
+spec:
+    secretName: wildcard-tls
+    issuerRef:
+        name: letsencrypt-cloudflare
+        kind: ClusterIssuer
+    commonName: ${DOMAIN}
+    dnsNames:
+        - ${DOMAIN}
+        - '*.${DOMAIN}'

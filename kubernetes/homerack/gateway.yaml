@@ -1,0 +1,112 @@
+# Envoy Gateway entry point on homerack, reachable on its Tailscale IP and on the home LAN.
+# Shares the Envoy Gateway controller (Helm release "eg" in kube-system, see
+# kubernetes/cloudrack/gateway.yaml) and the wildcard cert (default/wildcard-tls)
+# with cloudrack. DNS (external-dns) publishes only the Tailscale IP; LAN clients need local DNS pointing
+# these hostnames at homerack's LAN IP to use the LAN path.
+#
+# NOTE: homerack's Tailscale IP (current since 2026-09-15) appears three times below — externalIPs,
+# the Gateway address and the external-dns target — all encrypted. If homerack rejoins Tailscale with
+# a new identity, update them with scripts/sops-edit.sh and re-deploy.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+    name: homerack-proxy-config
+    namespace: default
+spec:
+    provider:
+        type: Kubernetes
+        kubernetes:
+            envoyDeployment:
+                replicas: 1
+                pod:
+                    nodeSelector:
+                        kubernetes.io/hostname: homerack
+                container:
+                    resources:
+                        requests:
+                            cpu: 50m
+                            memory: 64Mi
+                        limits:
+                            memory: 256Mi
+            envoyService:
+                type: LoadBalancer
+                externalTrafficPolicy: Local
+                patch:
+                    type: StrategicMerge
+                    value:
+                        spec:
+                            externalIPs:
+                                - ${HOMERACK_TS_IP}
+                                - ${HOMERACK_LAN_IP}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+    name: homerack-gateway
+    namespace: default
+    annotations:
+        # external-dns v0.22+ uses the "external-dns.kubernetes.io/" prefix (the old ".alpha." prefix is ignored).
+        external-dns.kubernetes.io/cloudflare-proxied: "false"
+        # Publish only the Tailscale IP, not the LAN IP.
+        external-dns.kubernetes.io/target: ${HOMERACK_TS_IP}
+spec:
+    gatewayClassName: eg # GatewayClass in kubernetes/cloudrack/gateway.yaml
+    infrastructure:
+        parametersRef:
+            group: gateway.envoyproxy.io
+            kind: EnvoyProxy
+            name: homerack-proxy-config
+    addresses:
+        - type: IPAddress
+          value: ${HOMERACK_TS_IP}
+        - type: IPAddress
+          value: ${HOMERACK_LAN_IP}
+    listeners:
+        - name: http
+          protocol: HTTP
+          port: 80
+          allowedRoutes:
+            namespaces:
+                from: All
+        - name: https-wildcard
+          protocol: HTTPS
+          port: 443
+          hostname: '*.${DOMAIN}'
+          tls:
+            mode: Terminate
+            certificateRefs:
+                - name: wildcard-tls
+          allowedRoutes:
+            namespaces:
+                from: All
+---
+# Redirect all plain-HTTP requests to HTTPS. No hostnames on purpose, so external-dns creates no record for it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: https-redirect-homerack
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          sectionName: http
+    rules:
+        - filters:
+            - type: RequestRedirect
+              requestRedirect:
+                scheme: https
+                statusCode: 301
+---
+# HTTP/3 (QUIC) on the HTTPS listener.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+    name: homerack-http3
+    namespace: default
+spec:
+    targetRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: homerack-gateway
+          sectionName: https-wildcard
+    http3: {}

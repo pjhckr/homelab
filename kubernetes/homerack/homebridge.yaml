@@ -1,0 +1,118 @@
+# Homebridge (HomeKit bridge) on homerack. hostNetwork is required: HomeKit/mDNS discovery and the LAN
+# accessories (Xiaomi miot, MirAIe AC, Android TV, Wake-on-LAN) need the real home LAN, not the pod overlay.
+# Data restored from ~/homenix-backup/homebridge-active.tar.gz (config.json, persist/, accessories/, plugins).
+# Post-restore edits in config.json: zigbee2mqtt plugin -> mqtt://mosquitto.default.svc.cluster.local:1883 with the
+# homebridge password from Secret default/mqtt-credentials; UI proxyHost points at its public hostname.
+# Bridge username/pin unchanged, so HomeKit pairings carry over.
+# RuntimeClass "privileged" (below) is shared with jellyfin: same runc runtime, the name only matches the PodSecurity
+# exemption in controlplane.yaml, so pods using it may use hostNetwork/privileged while default stays at baseline.
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+    name: privileged
+handler: runc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: homebridge-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path
+    resources:
+        requests:
+            storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: homebridge
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # hostNetwork + single node: never run two at once
+    selector:
+        matchLabels:
+            app: homebridge
+    template:
+        metadata:
+            labels:
+                app: homebridge
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            # hostNetwork is blocked by the cluster's baseline PodSecurity; this runtime class is exempt
+            # (RuntimeClass at the top of this file).
+            runtimeClassName: privileged
+            hostNetwork: true
+            dnsPolicy: ClusterFirstWithHostNet # so it can resolve mosquitto.default.svc.cluster.local
+            containers:
+                - name: homebridge
+                  image: homebridge/homebridge:2026-09-02
+                  # No capabilities added: NET_RAW (needed by homebridge-wol to ping "Gaming PC" for its on/off
+                  # status) is already in the container runtime's default set — tested live 2026-09-17.
+                  ports:
+                    - containerPort: 8581
+                      name: ui
+                  resources:
+                    requests:
+                        cpu: 50m
+                        memory: 128Mi
+                    limits:
+                        memory: 512Mi
+                  startupProbe:
+                    httpGet:
+                        path: /
+                        port: 8581
+                    periodSeconds: 10
+                    failureThreshold: 30
+                  readinessProbe:
+                    httpGet:
+                        path: /
+                        port: 8581
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /
+                        port: 8581
+                    periodSeconds: 20
+                  volumeMounts:
+                    - name: data
+                      mountPath: /homebridge
+            volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: homebridge-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: homebridge
+    namespace: default
+spec:
+    ports:
+        - port: 8581
+          targetPort: 8581
+          name: ui
+    selector:
+        app: homebridge
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: homebridge
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - homebridge.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: homebridge
+              port: 8581
