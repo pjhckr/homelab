@@ -1,0 +1,25 @@
+name: kubernetes
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - kubernetes/**
+            - scripts/apply-kubernetes.sh
+            - .github/workflows/kubernetes.yaml
+
+concurrency: kubernetes
+
+jobs:
+    apply:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install sops
+              run: |
+                  curl -sSLo sops https://github.com/getsops/sops/releases/download/v3.13.3/sops-v3.13.3.linux.amd64
+                  sudo install sops /usr/local/bin/sops
+            - name: Apply
+              run: scripts/apply-kubernetes.sh
+              env:
+                  SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
