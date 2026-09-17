@@ -1,0 +1,16 @@
+# Image Factory schematic for homerack. ID = sha256 of the content below (POST to https://factory.talos.dev/schematics to regenerate).
+# ID: db721ddd7d63f35664b6f69c4920d0f60b620a10ed66ea9356736418e6a5e2d3
+# Installer: factory.talos.dev/metal-installer/db721ddd7d63f35664b6f69c4920d0f60b620a10ed66ea9356736418e6a5e2d3:v1.14.0   (platform MUST stay metal)
+# btrfs: the extension only ships the module + btrfs-progs; talos/worker.yaml must also load it (machine.kernel.modules: btrfs).
+customization:
+    extraKernelArgs:
+        - sysctl.net.core.default_qdisc=fq
+    systemExtensions:
+        officialExtensions:
+            - siderolabs/btrfs
+            - siderolabs/i915
+            - siderolabs/intel-ice-firmware
+            - siderolabs/intel-ucode
+            - siderolabs/realtek-firmware
+            - siderolabs/tailscale
+    bootloader: sd-boot

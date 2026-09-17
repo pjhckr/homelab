@@ -1,0 +1,303 @@
+version: v1alpha1
+debug: false
+persist: true
+machine:
+    type: worker
+    token: ENC[AES256_GCM,data:S90YCdvj2bdKYZGsopQ/3v2m9dc4I4k=,iv:u9Cq9nlog1/mCSqcFxAxFQnnAFDLaoUtyGEEGdGaZY0=,tag:Zb9fPF0CGEqogeSdJWoyfA==,type:str] #encrypt
+    ca:
+        crt: ENC[AES256_GCM,data:/ij4AQDo1XMj1b+2ZNNURQ7p02iVcmOtIBMbEJWHZb9l1LYQ62l+Sk7q2IADxJqpkf6lkfKsqesYt+VJxRC07j57SEr+EcoVKK2JF6D+u7OAP1r49Lr81ge3rmQnWu89GraZIKlYl9jkXjW7eISjCWWgIUZeX+YIs9V2yN29LFuogR2KefkE+CK/K2Q79aKeKwGlndxc3lnWvBHSY/nMuw4BOFsui6up3xGzWS0mT2BvlaxPSP/pFNACeiH67nhHaKpMzwKrMrXaOG7bnM75O1BqbEPzxEJlMpS1BJQ5QFvbA+cAjRDL5OqA62XqSz6VsEkgXLH7oHtiufYnlSZu4TLJkxL2HOWNC9fg662GQhr/5lCdWmzXG+02Pmq3uOKO1guyNwmV7akPmv3iwxIHn4pVMOLVE1oOZ/UDnvTvzWUNmzGzu8AzZB1kik29Xp+27pU7WIWB9suOFotcoqbn4axj0udfk1WqxjccEqnsIv8uKH0OB49CCa+llmkezyGIa/g/3p2+7NzUxIdb6thWXqlA6eRXBunSoIpyc8CzOCY2G+ygVSSlHvBqpy1LMY5WaniSe4jsHEy5lD1IWvWrkDmd2NINjabarfroj0KKfh/dtW0d7wvOJBCDT648c3b2HJoXChfkLj8r2seB7LDVKJrh0MtEE3x9d9GgUQo904CqNGqjT89e6Duq4TkI7+XR9sMR9bZPeDmDeh9xiRy6K0d060bocqyHCaN0rScFbbJ5hLUt+tLcxDon+Kytm7g/7Nz+/TpGKycgVhmWYOw1TppY7ZL3P3LxZsYqUhj075nPdXQ43vzLOgBDCbqnQpsFtc8ybFFutBz9GU+7Yx2hD59UnWzrBKiMI2WXeQrpuUS7PkqO,iv:oIR3YH0p5MCe+qHzv+umTLF2XJd9RGKLg/uTyqKvwew=,tag:g9g6zqKBbsSD3WbBLG9jbw==,type:str] #encrypt
+        key: ""
+    certSANs:
+        - ENC[AES256_GCM,data:jmewKcKfeuot6ZAxpMOfXIbCyg==,iv:3IOjltdwGI0QPo1LgsUPS9BgtKaeczZJi9WIS7IqnKw=,tag:QY2S/x4DBnyFauRGWFL/qg==,type:str] #encrypt
+    kubelet:
+        image: ghcr.io/siderolabs/kubelet:v1.36.2
+        defaultRuntimeSeccompProfileEnabled: true
+        disableManifestsDirectory: true
+    install:
+        disk: /dev/mmcblk0
+        image: factory.talos.dev/metal-installer/db721ddd7d63f35664b6f69c4920d0f60b620a10ed66ea9356736418e6a5e2d3:v1.14.0
+        wipe: false
+        grubUseUKICmdline: false
+    kernel:
+        modules:
+            - name: btrfs
+    features:
+        diskQuotaSupport: true
+        kubePrism:
+            enabled: true
+            port: 7445
+        hostDNS:
+            enabled: true
+            forwardKubeDNSToHost: true
+cluster:
+    id: ENC[AES256_GCM,data:YHL4zJUle3KgTCacaZepf9+oUykPIZWFidTaVpgsSpoPuMTaEqI5FEKRA3U=,iv:0s9qABnE/Cs1dA+N5P1aEczBjdvOHJC4XOUWQ0Qsnug=,tag:tz5YVn8ABShvj3htna3BmQ==,type:str] #encrypt
+    secret: ENC[AES256_GCM,data:2T7Hj+vAPMvrMVMgbpxFubFPsrIRjAC8W85ldZ4OaLn95G7L6iiJQD8u8Fw=,iv:uuDEnTCaUZIug75AEjv4grIFUoVFRx1xrxhYK6H+W50=,tag:CWQUz3YlIKFX+eGIryaBwg==,type:str] #encrypt
+    controlPlane:
+        endpoint: ENC[AES256_GCM,data:tJDTKuV0RCU8Higxzu/EIh/DKrT1Ily9RV9Aj+vrpFW3,iv:4JRByAqUjTijfY8nFZT9aHmVYkcFs0rVZwHWrTuMx4Q=,tag:XlO8C7UElR89aQUjX8VNQQ==,type:str] #encrypt
+    clusterName: jainrack
+    network:
+        dnsDomain: cluster.local
+        podSubnets:
+            - 10.244.0.0/16
+            - fd00:10:244::/56
+        serviceSubnets:
+            - 10.96.0.0/12
+            - fd00:10:96::/112
+    token: ENC[AES256_GCM,data:5uInqQtLNKFXHCXdpO0kA57W9YiRAOk=,iv:ztZ6x0Qnh59OfGc1P/cMbeIjqx/2w7PtVMkl+CNZOTc=,tag:ckrUF3sfgxd0ANvpR5900A==,type:str] #encrypt
+    ca:
+        crt: ENC[AES256_GCM,data:uLpIK8V5E7c02FGTPLqUEkywe1E9Ba7ofe5Tcd8/fHxsbP+3N8nkZ6K1O4mwaDYNqKn0Tw+b+jR8H4XAKFQoNWzp8Icmmz7K/uohJCUbRo44ycX0IzJobz4ZP+iGrcEYznvyQnXc5v0TwMu3u14jWP2Bk/s5sxP94w9MIu8NI4dFRWvUoyd0eAK4D6K8GSJpuaxcgyVMEzs94B76XMzVbXWOT+Z9GAP1GlUIs6XpSZTwzAzBUBj49Tqz0L77OCpOTUkSh/X2NTyQv3zfT4IgOpkRfvYQ9rFweqaVH4FNFtMtTyt+kLp0mYWC2W+WGwjswK38ww30cQheBzCIjARMbejTkzc6vaipGf+n1KsrNIScMP+YT+41pHwUlmev3jT3n/GXTxUG8J2cwa24lkRQsWUYL3Y6+VSpyGuyz5P0zxXO6fuSXaG5NOeroLdRw4hanki0Vwf4ZIHQLDRVvMA6pVTpnqP/vegV7mYqaRYfD+fVxwJTgDbTxWKzmnC3ooa3CIvhIoRkO/GUaTj7aJpxlTi7DjWKqUpY5fvNZwkiNwKVnO6AYumjJhQiaauuP5jc93rVn2XrqGKuHJtj5f0q1HwsTPqfSvZ3+TXMCy+Fu9xG+EZghyJstkG5iclIFxOtJBLW/SX6Ld+fpQuVgwduVp+4+nXeWIQsu4QCNi5Rr0ysY6NQa1dD2dbqXbP88LW6XUn5XmzByIZZQp2pbmUqqsLFsZ5HWKonk4HAABX8H+jlkAgYWB8xnv9SlfO/QJk4JcHNH5MNGnq+lsU93ZcqJFtoZMN1hZbL+wGYBKkk8DPlgRI1Q7+gQvCnjV1IhxfoN+LIYBJiIcTUi7vRj8K/gidLff1sw0RSsB3JZ1A/YWArbGq8JBGdj86k9f6RGiwpPwRW/izFFwfr2CvsChEzBZGRoI0lG3WnJxwhDhalkI4ljYz+wHxmAdPM0ph3eTGFoGqelgxcUzZx0GHmYAo76DAAEUGygIE1DaGhFAh0MYl70JAc5xileOvhEscDXTCjM82BwXaBBO5ieoaCgmSjCocAASs=,iv:/EodBnKW1fNPdusvnD/28Rx3wzVYRd3YGDUHxnmcYA4=,tag:3InGcbqvfmuYOPX2+pZSIQ==,type:str] #encrypt
+        key: ""
+    discovery:
+        enabled: true
+        registries:
+            kubernetes:
+                disabled: true
+            service: {}
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: "off"
+hostname: homerack
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: KubeSpanConfig
+enabled: false
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: ExtensionServiceConfig
+name: tailscale
+environment:
+    - ENC[AES256_GCM,data:3Y2y8duohXTZS8SlMywMkvfXbO3JEE+YZcfQxo4s25u5sL45M7Qfns9LIyTsTfCEGmukJiwi3qgM2X/malWoa+OTbZFCidkj,iv:m5CQyLsNI0bQXIxHCN3gdPRKqCL6XP/pjqnwtkyiwKw=,tag:39gU1/EFK2J+wP2LlET0Hw==,type:str] #encrypt
+    - TS_EXTRA_ARGS=--advertise-tags=tag:home-server --hostname=homerack
+    - TS_ACCEPT_DNS=false
+    - TS_DEBUG_MTU=1350
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: ResolverConfig
+nameservers:
+    - address: 1.1.1.1
+    - address: 1.0.0.1
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: TimeSyncConfig
+ntp:
+    servers:
+        - time.cloudflare.com
+    useNTS: true
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+# NIC tuning recommended by Tailscale (UDP GRO forwarding) — mainly benefits subnet routers / exit nodes.
+apiVersion: v1alpha1
+kind: EthernetConfig
+name: enp2s0
+features:
+    rx-udp-gro-forwarding: true
+    rx-gro-list: false
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+# TCP tuning: BBR + fq, keep cwnd on idle, limit unsent backlog, MTU probing (tunnels), larger buffers for high-BDP paths.
+apiVersion: v1alpha1
+kind: SysctlConfig
+params:
+    net.ipv4.tcp_congestion_control: bbr
+    net.core.default_qdisc: fq
+    net.ipv4.tcp_slow_start_after_idle: "0"
+    net.ipv4.tcp_notsent_lowat: "16384"
+    net.ipv4.tcp_mtu_probing: "1"
+    net.core.rmem_max: "33554432"
+    net.core.wmem_max: "33554432"
+    net.ipv4.tcp_rmem: 4096 131072 33554432
+    net.ipv4.tcp_wmem: 4096 16384 33554432
+    net.ipv6.conf.all.accept_redirects: "0"
+    net.ipv4.tcp_tw_reuse: "1"
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: VolumeConfig
+name: EPHEMERAL
+provisioning:
+    maxSize: 18GB
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-path-provisioner
+provisioning:
+    diskSelector:
+        match: system_disk
+    minSize: 10GB
+    maxSize: 10GB
+filesystem:
+    type: btrfs
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-path-ssd
+provisioning:
+    diskSelector:
+        match: disk.wwid == "naa.500a0751e8b71999"
+    minSize: 100GB
+    grow: true
+filesystem:
+    type: btrfs
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3SlJVbFNPY242T1JNN3FM
+            SXpOdjNFNkJtdUFRaHBLeFBiY3lNdjNudkhRCjBtTEZGZzRmbU13VStXb2h6RTJP
+            SHNRKzhJditqUFFnSzhiK0hVUlpzNW8KLS0tIGFMandhajVEUVYzWDlRVkczUVNh
+            VnNwSXFNbitTR0MvYmdIY3RrbmlqNjgKPHeaoczbYyGXcsooiIS6r1TgVT6Dg/ro
+            sPopX9WkZYsJ2R12fzg9JZ+lXLadZBP/xgBDlAjQ7T4Xi9j9jKb6mA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
+    encrypted_comment_regex: encrypt
+    lastmodified: "2026-09-17T10:52:45Z"
+    mac: ENC[AES256_GCM,data:5Lu0xazTKN/Edzj6GPVBjITLt0AP2SEiVWzcu6V3f7v31Ys6aF+GGCFOw4whHoESO7ihiUrWJsazzICczyTKcEVWT9ZIipNShSFn9/Eu0qq/WBM43cX9P68SRPt255GmImWGDz89o69udEN9LAUB7j6TGBjmpusdL/CBNyjkCOk=,iv:0TEvC8/Fae1wIOMsI+Fec15ArbY9XqK+877HVnJxZTY=,tag:IkhWoucq2bkl5otGvFF40g==,type:str]
+    version: 3.13.3

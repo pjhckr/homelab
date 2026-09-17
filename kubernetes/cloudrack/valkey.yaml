@@ -1,0 +1,50 @@
+# Shared Valkey (Redis-compatible) on cloudrack. Used by Immich (REDIS_HOSTNAME=valkey.default.svc.cluster.local).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+  namespace: default
+  labels:
+    app: valkey
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: valkey
+  template:
+    metadata:
+      labels:
+        app: valkey
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cloudrack
+      containers:
+        - name: valkey
+          image: valkey/valkey:8.1-alpine
+          # Cap Valkey's own memory below the container limit (headroom for fragmentation, client buffers,
+          # snapshot fork). noeviction: Immich's BullMQ job queues must never be evicted; when full, writes
+          # fail loudly instead of silently dropping jobs.
+          args: ["valkey-server", "--maxmemory", "220mb", "--maxmemory-policy", "noeviction"]
+          ports:
+            - containerPort: 6379
+              name: valkey
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m    # half a core; Valkey is single-threaded and normally uses ~0.5% of one
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: default
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: valkey
+  selector:
+    app: valkey

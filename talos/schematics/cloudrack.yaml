@@ -1,0 +1,9 @@
+# Image Factory schematic for cloudrack. ID = sha256 of the content below (POST to https://factory.talos.dev/schematics to regenerate).
+# ID: dca40b83686adc5498039706e4102473c690ccaa41c67c92290954868c85c7b1
+# Installer: factory.talos.dev/nocloud-installer/dca40b83686adc5498039706e4102473c690ccaa41c67c92290954868c85c7b1:v1.14.0   (platform MUST stay nocloud)
+customization:
+    extraKernelArgs:
+        - sysctl.net.core.default_qdisc=fq
+    systemExtensions:
+        officialExtensions:
+            - siderolabs/tailscale

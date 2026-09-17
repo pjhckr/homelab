@@ -1,0 +1,68 @@
+# Hetzner Storage Box over SMB via csi-driver-smb, mounted on cloudrack only.
+# Credentials: secret default/storagebox-secret (keys: username, password).
+#
+# The driver is a Helm release "csi-driver-smb" in kube-system, not managed by this file —
+# reinstall it with:
+#   helm repo add csi-driver-smb https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
+#   helm install csi-driver-smb csi-driver-smb/csi-driver-smb --version 1.20.3 -n kube-system \
+#     --set 'controller.nodeSelector.kubernetes\.io/hostname=cloudrack' \
+#     --set controller.replicas=0
+# controller.replicas=0 on purpose: the controller only provisions and resizes volumes created from
+# a StorageClass. This PV is static and the driver sets attachRequired=false, so only the
+# csi-smb-node DaemonSet is needed — that is what performs the CIFS mount. Set replicas=1 again if
+# you ever add a StorageClass for dynamically provisioned SMB shares.
+# The node DaemonSet runs on every Linux node (homerack included, idle there for now — kept for
+# future backups). Pin it with --set 'node.nodeSelector.kubernetes\.io/hostname=cloudrack'.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+    name: storagebox-shared-pv
+spec:
+    capacity:
+        storage: 1Ti
+    accessModes:
+        - ReadWriteMany
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: smb-storagebox
+    nodeAffinity:
+        required:
+            nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/hostname
+                      operator: In
+                      values:
+                        - cloudrack
+    csi:
+        driver: smb.csi.k8s.io
+        volumeHandle: storagebox-shared-pv-volume
+        volumeAttributes:
+            source: //${STORAGEBOX_HOST}/backup
+        nodeStageSecretRef:
+            name: storagebox-secret
+            namespace: default
+    mountOptions:
+        - vers=3.1.1
+        - seal
+        - rsize=4194304
+        - wsize=4194304
+        - actimeo=30
+        - echo_interval=60
+        - nobrl
+        - dir_mode=0777
+        - file_mode=0777
+        - noperm
+        - noserverino
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: storagebox-shared-pvc
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteMany
+    storageClassName: smb-storagebox
+    resources:
+        requests:
+            storage: 1Ti
+    volumeName: storagebox-shared-pv

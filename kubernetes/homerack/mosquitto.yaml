@@ -1,0 +1,115 @@
+# MQTT broker for the home-automation stack (zigbee2mqtt, homebridge). Cluster-internal only.
+# Restored from the old NixOS homerack box (~/homenix-backup/mosquitto.tar.gz):
+#   - passwd-0 + acl-0.conf -> Secret default/mosquitto-auth. The z2m and homebridge passwords were reset
+#     on 2026-09-11 (old plaintext was lost); their new plaintext lives in Secret default/mqtt-credentials.
+#     dongle_max and homeassistant keep their old hashes (no known plaintext, nothing uses them now).
+#   - mosquitto.db (retained messages) -> restored onto the PVC.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: mosquitto-conf
+    namespace: default
+data:
+    mosquitto.conf: |
+        listener 1883 0.0.0.0
+        allow_anonymous false
+        password_file /mosquitto/config/passwd-0
+        acl_file /mosquitto/config/acl-0.conf
+        persistence true
+        persistence_location /mosquitto/data/
+        persistence_file mosquitto.db
+        log_dest stdout
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: mosquitto-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path
+    resources:
+        requests:
+            storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mosquitto
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            app: mosquitto
+    template:
+        metadata:
+            labels:
+                app: mosquitto
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            # Auth files owned by group mosquitto (1883) and not world-readable, as mosquitto 2.x requires going forward.
+            securityContext:
+                fsGroup: 1883
+            containers:
+                - name: mosquitto
+                  image: eclipse-mosquitto:2.1.2-alpine
+                  ports:
+                    - containerPort: 1883
+                      name: mqtt
+                  resources:
+                    requests:
+                        cpu: 20m
+                        memory: 32Mi
+                    limits:
+                        memory: 128Mi
+                  readinessProbe:
+                    tcpSocket:
+                        port: 1883
+                    initialDelaySeconds: 5
+                    periodSeconds: 10
+                  livenessProbe:
+                    tcpSocket:
+                        port: 1883
+                    initialDelaySeconds: 10
+                    periodSeconds: 20
+                  volumeMounts:
+                    - name: conf
+                      mountPath: /mosquitto/config/mosquitto.conf
+                      subPath: mosquitto.conf
+                    - name: auth
+                      mountPath: /mosquitto/config/passwd-0
+                      subPath: passwd-0
+                    - name: auth
+                      mountPath: /mosquitto/config/acl-0.conf
+                      subPath: acl-0.conf
+                    - name: data
+                      mountPath: /mosquitto/data
+            volumes:
+                - name: conf
+                  configMap:
+                    name: mosquitto-conf
+                - name: auth
+                  secret:
+                    secretName: mosquitto-auth
+                    defaultMode: 288
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: mosquitto-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: mosquitto
+    namespace: default
+spec:
+    ports:
+        - port: 1883
+          targetPort: 1883
+          name: mqtt
+    selector:
+        app: mosquitto

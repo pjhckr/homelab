@@ -1,0 +1,104 @@
+# Stirling PDF on homerack. Settings and users (/configs) persist on the SSD (local-path-ssd).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: stirling-pdf-configs
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-ssd
+    resources:
+        requests:
+            storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: stirling-pdf
+    namespace: default
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: stirling-pdf
+    template:
+        metadata:
+            labels:
+                app: stirling-pdf
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            containers:
+                - name: stirling-pdf
+                  image: stirlingtools/stirling-pdf:2.14.3
+                  env:
+                    - name: INSTALL_BOOK_AND_ADVANCED_HTML_OPS
+                      value: "true"
+                  ports:
+                    - containerPort: 8080
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 100m
+                        memory: 512Mi
+                    limits:
+                        # Bundles LibreOffice + unoserver + Xvfb + a JVM; 1Gi OOM-killed it before.
+                        memory: 2Gi
+                  # Slow, variable start (LibreOffice + JVM). /actuator/health is unauthenticated; / requires login.
+                  startupProbe:
+                    httpGet:
+                        path: /actuator/health
+                        port: 8080
+                    failureThreshold: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                        path: /actuator/health
+                        port: 8080
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /actuator/health
+                        port: 8080
+                    periodSeconds: 30
+                  volumeMounts:
+                    - name: configs
+                      mountPath: /configs
+            volumes:
+                - name: configs
+                  persistentVolumeClaim:
+                    claimName: stirling-pdf-configs
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: stirling-pdf
+    namespace: default
+spec:
+    ports:
+        - port: 8080
+          targetPort: 8080
+          name: http
+    selector:
+        app: stirling-pdf
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: stirling-pdf
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - pdf.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: stirling-pdf
+              port: 8080
+          # Large PDF conversions/OCR can exceed Envoy's default 15s request timeout.
+          timeouts:
+            request: 0s

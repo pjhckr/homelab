@@ -1,0 +1,159 @@
+# zigbee2mqtt on homerack. Bridges the network-attached Zigbee coordinator (ember adapter at
+# over TCP on the home LAN, not USB) to the in-cluster mosquitto.
+# Data restored 2026-09-11 from the old NixOS disk (homerack sda1 btrfs, subvol @root, /var/lib/zigbee2mqtt,
+# read with `btrfs restore`): database.db, coordinator_backup.json, state.json. devices.yaml was unreadable
+# (damaged compressed extent) and was rebuilt from friendly names found in the old logs.
+# configuration.yaml below mirrors the restored v5 config; only the MQTT server and frontend host changed.
+# The MQTT password comes from Secret default/mqtt-credentials via ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: zigbee2mqtt-conf
+    namespace: default
+data:
+    configuration.yaml: |
+        version: 5
+        homeassistant:
+          enabled: false
+        advanced:
+          last_seen: ISO_8601_local
+        availability:
+          enabled: true
+        devices: devices.yaml
+        groups: groups.yaml
+        mqtt:
+          base_topic: zigbee2mqtt
+          server: mqtt://mosquitto.default.svc.cluster.local:1883
+          user: z2m
+          # Placeholder: the real value comes from the ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD env var.
+          password: set-by-env
+        serial:
+          port: ${ZIGBEE_SERIAL_PORT}
+          baudrate: 115200
+          adapter: ember
+          rtscts: false
+        frontend:
+          enabled: true
+          port: 8082
+          host: 0.0.0.0
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: zigbee2mqtt-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path
+    resources:
+        requests:
+            storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: zigbee2mqtt
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # the coordinator's TCP connection is exclusive; overlapping pods break both
+    selector:
+        matchLabels:
+            app: zigbee2mqtt
+    template:
+        metadata:
+            labels:
+                app: zigbee2mqtt
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            initContainers:
+                # ConfigMap mounts are read-only but z2m rewrites configuration.yaml; seed it onto the PVC once.
+                - name: seed-config
+                  image: busybox:1.37
+                  command:
+                    - sh
+                    - -c
+                    - '[ -f /data/configuration.yaml ] || cp /seed/configuration.yaml /data/configuration.yaml'
+                  volumeMounts:
+                    - name: conf
+                      mountPath: /seed
+                    - name: data
+                      mountPath: /data
+            containers:
+                - name: zigbee2mqtt
+                  image: koenkk/zigbee2mqtt:2.13.0
+                  env:
+                    - name: ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                            name: mqtt-credentials
+                            key: z2m-password
+                  ports:
+                    - containerPort: 8082
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 50m
+                        memory: 128Mi
+                    limits:
+                        memory: 512Mi
+                  # Coordinator handshake + MQTT connect timing varies.
+                  startupProbe:
+                    httpGet:
+                        path: /
+                        port: 8082
+                    failureThreshold: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                        path: /
+                        port: 8082
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /
+                        port: 8082
+                    periodSeconds: 30
+                  volumeMounts:
+                    - name: data
+                      mountPath: /app/data
+            volumes:
+                - name: conf
+                  configMap:
+                    name: zigbee2mqtt-conf
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: zigbee2mqtt-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: zigbee2mqtt
+    namespace: default
+spec:
+    ports:
+        - port: 8082
+          targetPort: 8082
+          name: http
+    selector:
+        app: zigbee2mqtt
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: zigbee2mqtt
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - z2m.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: zigbee2mqtt
+              port: 8082

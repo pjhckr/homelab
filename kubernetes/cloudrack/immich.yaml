@@ -1,0 +1,121 @@
+# Immich server on cloudrack. Postgres is external (secret default/immich-db, key DB_URL).
+# Redis-compatible cache: shared Valkey (valkey.yaml). Machine learning is disabled (no immich-machine-learning pod).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: immich-server
+    namespace: default
+    labels:
+        app: immich-server
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate
+    selector:
+        matchLabels:
+            app: immich-server
+    template:
+        metadata:
+            labels:
+                app: immich-server
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: cloudrack
+            containers:
+                - name: server
+                  # Bump deliberately: take a DB dump first (last: manual-pre-upgrade-20260911T104944-v3.1.0-*.sql.gz on the storage box).
+                  # v3.1.0 -> v3.2.0 on 2026-09-11 (no breaking changes; the face-recognition reset is only for the opt-in cluster groups).
+                  image: ghcr.io/immich-app/immich-server:v3.2.0
+                  env:
+                    - name: DB_URL
+                      valueFrom:
+                        secretKeyRef:
+                            name: immich-db
+                            key: DB_URL
+                    # The external Postgres has pgvector but not VectorChord; the HNSW indexes were built during the restore.
+                    - name: DB_VECTOR_EXTENSION
+                      value: pgvector
+                    - name: REDIS_HOSTNAME
+                      value: valkey.default.svc.cluster.local
+                    - name: REDIS_PORT
+                      value: "6379"
+                    - name: IMMICH_MACHINE_LEARNING_ENABLED
+                      value: "false"
+                    # Asset paths stored in the DB are under /usr/src/app/upload.
+                    - name: IMMICH_MEDIA_LOCATION
+                      value: /usr/src/app/upload
+                  ports:
+                    - containerPort: 2283
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 100m
+                        memory: 256Mi
+                    limits:
+                        cpu: "2" # at most 2 of cloudrack's 4 cores (heavy jobs get throttled, not the whole node)
+                        memory: 2Gi
+                  # First boot runs migrations and rebuilds vector indexes; allow up to 30 min.
+                  startupProbe:
+                    httpGet:
+                        path: /api/server/ping
+                        port: 2283
+                    periodSeconds: 10
+                    failureThreshold: 180
+                  readinessProbe:
+                    httpGet:
+                        path: /api/server/ping
+                        port: 2283
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /api/server/ping
+                        port: 2283
+                    periodSeconds: 20
+                    failureThreshold: 3
+                  volumeMounts:
+                    - name: storagebox-shared
+                      mountPath: /usr/src/app/upload
+                      subPath: my_media/immich_library
+                    - name: storagebox-shared
+                      mountPath: /mnt/storage_box/my_media/wedding_photos
+                      subPath: my_media/wedding_photos
+                      readOnly: true
+            volumes:
+                - name: storagebox-shared
+                  persistentVolumeClaim:
+                    claimName: storagebox-shared-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: immich-server
+    namespace: default
+    labels:
+        app: immich-server
+spec:
+    ports:
+        - port: 2283
+          targetPort: 2283
+          name: http
+    selector:
+        app: immich-server
+---
+# Reachable through cloudrack-gateway on its Tailscale IP (see gateway.yaml); DNS record created by external-dns.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: immich
+    namespace: default
+spec:
+    parentRefs:
+        - name: cloudrack-gateway
+          sectionName: https-wildcard
+    hostnames:
+        - immich.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: immich-server
+              port: 2283
+          # Large photo/video uploads and video streaming: disable Envoy's default 15s request timeout.
+          timeouts:
+            request: 0s

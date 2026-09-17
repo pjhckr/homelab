@@ -1,0 +1,127 @@
+# Jellyfin on homerack, streaming mostly via the Gelato plugin. Everything lives on the SSD: one local-path-ssd
+# volume with four subPaths — /config, /cache, Gelato's folder, and local media at the path the libraries use.
+# /config was restored 2026-09-15 from ~/homenix-backup/jellyfin-config.tar.gz (NixOS Jellyfin 10.11) and migrated to 12.1.
+# Intel QSV transcoding needs /dev/dri/renderD128, hence privileged — allowed by runtimeClassName: privileged,
+# which the cluster's PodSecurity admission exempts (see homebridge.yaml).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: jellyfin-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-ssd
+    resources:
+        requests:
+            storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: jellyfin
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # single RWO volume with a SQLite db
+    selector:
+        matchLabels:
+            app: jellyfin
+    template:
+        metadata:
+            labels:
+                app: jellyfin
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            # privileged + hostPath /dev/dri are blocked by the cluster's baseline PodSecurity; this runtime
+            # class is exempt (see homebridge.yaml).
+            runtimeClassName: privileged
+            containers:
+                - name: jellyfin
+                  image: jellyfin/jellyfin:12.1
+                  securityContext:
+                    privileged: true
+                  ports:
+                    - containerPort: 8096
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 200m
+                        memory: 512Mi
+                    limits:
+                        memory: 4Gi
+                  # First start after a version jump runs database migrations before serving.
+                  startupProbe:
+                    httpGet:
+                        path: /health
+                        port: 8096
+                    failureThreshold: 90
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                        path: /health
+                        port: 8096
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /health
+                        port: 8096
+                    periodSeconds: 30
+                  volumeMounts:
+                    - name: data
+                      mountPath: /config
+                      subPath: config
+                    - name: data
+                      mountPath: /cache
+                      subPath: cache
+                    - name: data
+                      mountPath: /mnt/ssd/my_media/gelato
+                      subPath: gelato
+                    - name: data
+                      mountPath: /mnt/ssd/my_media/arr_stack/media
+                      subPath: media
+                    - name: dri
+                      mountPath: /dev/dri
+            volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: jellyfin-data
+                - name: dri
+                  hostPath:
+                    path: /dev/dri
+                    type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: jellyfin
+    namespace: default
+spec:
+    ports:
+        - port: 8096
+          targetPort: 8096
+          name: http
+    selector:
+        app: jellyfin
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: jellyfin
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - jellyfin.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: jellyfin
+              port: 8096
+          # Streams and long transcodes must not hit Envoy's default 15s request timeout.
+          timeouts:
+            request: 0s
