@@ -1,0 +1,470 @@
+# Rendered: helm template openobserve openobserve/openobserve-standalone --version 1.0.1 -n default --set fullnameOverride=openobserve --set persistence.size=50Gi --set persistence.storageClass=local-path-ssd --set auth.existingRootUserSecret.name=openobserve-root --set config.ZO_COMPACT_DATA_RETENTION_DAYS=30 --set resources.requests.cpu=100m --set resources.requests.memory=256Mi --set resources.limits.memory=2Gi --set nodeSelector.kubernetes\.io/hostname=homerack
+---
+# Source: openobserve-standalone/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openobserve
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+
+---
+# Source: openobserve-standalone/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openobserve
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  ZO_S3_ACCESS_KEY: ""
+  ZO_S3_SECRET_KEY: ""
+
+---
+# Source: openobserve-standalone/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openobserve
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  ZO_APP_NAME: "openobserve"
+  ZO_CLUSTER_NAME: "o2"
+  ZO_INSTANCE_NAME: ""
+  ZO_NODE_ROLE: "all"
+  ZO_LOCAL_MODE: "true"
+  ZO_LOCAL_MODE_STORAGE: "disk"
+  ZO_HTTP_PORT: "5080"
+  ZO_HTTP_ADDR: ""
+  ZO_HTTP_IPV6_ENABLED: "false"
+  ZO_GRPC_PORT: "5081"
+  ZO_GRPC_ADDR: ""
+  ZO_GRPC_CONNECT_TIMEOUT: "600"
+  ZO_GRPC_MAX_MESSAGE_SIZE: "16"
+  ZO_GRPC_CHANNEL_CACHE_DISABLED: "false"
+  ZO_GRPC_ORG_HEADER_KEY: "organization"
+  ZO_GRPC_STREAM_HEADER_KEY: "stream-name"
+  ZO_GRPC_TLS_ENABLED: "false"
+  ZO_GRPC_TLS_CERT_DOMAIN: ""
+  ZO_GRPC_TLS_CERT_PATH: ""
+  ZO_GRPC_TLS_KEY_PATH: ""
+  ZO_INTERNAL_GRPC_TOKEN: ""
+  ZO_DATA_DIR: "./data/"
+  ZO_DATA_DB_DIR: ""
+  ZO_DATA_WAL_DIR: ""
+  ZO_DATA_IDX_DIR: ""
+  ZO_DATA_STREAM_DIR: ""
+  ZO_DATA_CACHE_DIR: ""
+  ZO_UI_ENABLED: "true"
+  ZO_UI_SQL_BASE64_ENABLED: "false"
+  ZO_WEB_URL: ""
+  ZO_BASE_URI: ""
+  ZO_META_STORE: "sqlite"
+  # ZO_META_POSTGRES_DSN is intentionally NOT set here — it is a credential and is
+  # rendered into the Secret instead (see templates/secret.yaml). Set it via
+  # auth.ZO_META_POSTGRES_DSN (preferred) or config.ZO_META_POSTGRES_DSN.
+  ZO_META_CONNECTION_POOL_MIN_SIZE: "0"
+  ZO_META_CONNECTION_POOL_MAX_SIZE: "0"
+  ZO_META_TRANSACTION_RETRIES: "3"
+  ZO_META_TRANSACTION_LOCK_TIMEOUT: "600"
+  ZO_COLS_PER_RECORD_LIMIT: "200"
+  ZO_FILE_FORMAT: "parquet"
+  ZO_FEATURE_FULLTEXT_EXTRA_FIELDS: ""
+  ZO_FEATURE_INDEX_EXTRA_FIELDS: ""
+  ZO_FEATURE_DISTINCT_EXTRA_FIELDS: ""
+  ZO_FEATURE_QUERY_QUEUE_ENABLED: "true"
+  ZO_FEATURE_QUICK_MODE_FIELDS: ""
+  ZO_FEATURE_QUERY_PARTITION_STRATEGY: "file_num"
+  ZO_FEATURE_SHARED_MEMTABLE_ENABLED: "false"
+  ZO_FEATURE_QUERY_STREAMING_AGGS: "true"
+  ZO_UTF8_VIEW_ENABLED: "false"
+  ZO_DATAFUSION_STREAMING_AGGS_CACHE_MAX_ENTRIES: "10000"
+  ZO_DATAFUSION_FILE_STAT_CACHE_MAX_ENTRIES: "10000"
+  ZO_CACHE_DELAY_SECS: "300"
+  ZO_RESULT_CACHE_ENABLED: "false"
+  ZO_METRICS_CACHE_ENABLED: "true"
+  ZO_METRICS_CACHE_MAX_ENTRIES: "10000"
+  ZO_QUERY_OPTIMIZATION_NUM_FIELDS: "0"
+  ZO_SCHEMA_MAX_FIELDS_TO_ENABLE_UDS: "150"
+  ZO_USER_DEFINED_SCHEMA_MAX_FIELDS: "200"
+  ZO_QUICK_MODE_ENABLED: "false"
+  ZO_QUICK_MODE_FORCE_ENABLED: "true"
+  ZO_QUICK_MODE_NUM_FIELDS: "500"
+  ZO_QUICK_MODE_STRATEGY: ""
+  ZO_BLOOM_FILTER_ENABLED: "true"
+  ZO_BLOOM_FILTER_DEFAULT_FIELDS: ""
+  ZO_ENABLE_INVERTED_INDEX: "true"
+  ZO_INVERTED_INDEX_COUNT_OPTIMIZER_ENABLED: "true"
+  ZO_FEATURE_QUERY_REMOVE_FILTER_WITH_INDEX: "true"
+  ZO_INVERTED_INDEX_CAMEL_CASE_TOKENIZER_DISABLED: "false"
+  ZO_QUERY_ON_STREAM_SELECTION: "true"
+  ZO_DISTINCT_VALUES_INTERVAL: "10"
+  ZO_DISTINCT_VALUES_HOURLY: "false"
+  ZO_TRACING_ENABLED: "false"
+  ZO_TRACING_SEARCH_ENABLED: "false"
+  ZO_SEARCH_INSPECTOR_ENABLED: "false"
+  ZO_TRACING_HEADER_KEY: "Authorization"
+  ZO_TRACING_HEADER_VALUE: "Basic cm9vdEBleGFtcGxlLmNvbTpDb21wbGV4cGFzcyMxMjM="
+  OTEL_OTLP_HTTP_ENDPOINT: ""
+  ZO_TELEMETRY: "true"
+  ZO_TELEMETRY_HEARTBEAT: "1800"
+  ZO_TELEMETRY_URL: "https://e1.zinclabs.dev"
+  ZO_JSON_LIMIT: "209715200"
+  ZO_PAYLOAD_LIMIT: "209715200"
+  ZO_PARQUET_MAX_ROW_GROUP_SIZE: "0"
+  ZO_MAX_FILE_SIZE_ON_DISK: "512"
+  ZO_MAX_FILE_SIZE_IN_MEMORY: "512"
+  ZO_MAX_FILE_RETENTION_TIME: "600"
+  ZO_FILE_PUSH_INTERVAL: "2"
+  ZO_FILE_PUSH_LIMIT: "10000"
+  ZO_FILE_MOVE_THREAD_NUM: "0"
+  ZO_FILE_MERGE_THREAD_NUM: "0"
+  ZO_MEM_DUMP_THREAD_NUM: "0"
+  ZO_MEM_TABLE_MAX_SIZE: "0"
+  ZO_MEM_TABLE_BUCKET_NUM: "0"
+  ZO_MEM_PERSIST_INTERVAL: "2"
+  ZO_ENRICHMENT_TABLE_LIMIT: "10"
+  ZO_WAL_WRITE_BUFFER_SIZE: "16384"
+  ZO_WAL_WRITE_QUEUE_SIZE: "0"
+  ZO_WAL_RUNTIME_WORKER_NUM: "0"
+  ZO_WAL_FSYNC_DISABLED: "false"
+  ZO_WAL_WRITE_QUEUE_ENABLED: "false"
+  ZO_WAL_WRITE_QUEUE_FULL_REJECT: "false"
+  ZO_WAL_DEDICATED_RUNTIME_ENABLED: "false"
+  ZO_QUERY_THREAD_NUM: "0"
+  ZO_QUERY_INDEX_THREAD_NUM: "0"
+  ZO_QUERY_TIMEOUT: "600"
+  ZO_GRPC_INGEST_TIMEOUT: "600"
+  ZO_ROUTE_TIMEOUT: "600"
+  ZO_ROUTE_MAX_CONNECTIONS: "1024"
+  ZO_ROUTE_STRATEGY: "workload"
+  ZO_HTTP_WORKER_NUM: "0"
+  ZO_HTTP_WORKER_MAX_BLOCKING: "0"
+  ZO_HTTP_SHUTDOWN_TIMEOUT: "5"
+  ZO_HTTP_SLOW_LOG_THRESHOLD: "5"
+  ZO_HTTP_ACCESS_LOG_FORMAT: ""
+  ZO_INGEST_ALLOWED_UPTO: "24"
+  ZO_INGEST_FLATTEN_LEVEL: "3"
+  ZO_LOGS_FILE_RETENTION: "hourly"
+  ZO_TRACES_FILE_RETENTION: "hourly"
+  ZO_METRICS_FILE_RETENTION: "hourly"
+  ZO_METRICS_QUERY_RETENTION: "daily"
+  ZO_METRICS_DEDUP_ENABLED: "true"
+  ZO_METRICS_LEADER_PUSH_INTERVAL: "15"
+  ZO_METRICS_LEADER_ELECTION_INTERVAL: "30"
+  ZO_PROMETHEUS_HA_CLUSTER: "cluster"
+  ZO_PROMETHEUS_HA_REPLICA: "__replica__"
+  ZO_COMPACT_ENABLED: "true"
+  ZO_COMPACT_INTERVAL: "10"
+  ZO_COMPACT_SYNC_TO_DB_INTERVAL: "600"
+  ZO_COMPACT_STRATEGY: "file_time"
+  ZO_COMPACT_MAX_FILE_SIZE: "2048"
+  ZO_COMPACT_DATA_RETENTION_DAYS: "30"
+  ZO_COMPACT_DELETE_FILES_DELAY_MINUTES: "120"
+  ZO_COMPACT_BATCH_SIZE: "0"
+  ZO_COMPACT_BLOCKED_ORGS: ""
+  ZO_MEMORY_CACHE_ENABLED: "false"
+  ZO_MEMORY_CACHE_STRATEGY: "lru"
+  ZO_MEMORY_CACHE_MAX_SIZE: "0"
+  ZO_MEMORY_CACHE_SKIP_SIZE: "0"
+  ZO_MEMORY_CACHE_RELEASE_SIZE: "0"
+  ZO_MEMORY_CACHE_GC_SIZE: "50"
+  ZO_MEMORY_CACHE_GC_INTERVAL: "0"
+  ZO_MEMORY_CACHE_DATAFUSION_MEMORY_POOL: ""
+  ZO_MEMORY_CACHE_DATAFUSION_MAX_SIZE: "0"
+  ZO_DISK_CACHE_ENABLED: "true"
+  ZO_DISK_CACHE_STRATEGY: "time_lru"
+  ZO_DISK_CACHE_MAX_SIZE: "0"
+  ZO_DISK_CACHE_SKIP_SIZE: "0"
+  ZO_DISK_CACHE_RELEASE_SIZE: "0"
+  ZO_DISK_CACHE_GC_SIZE: "100"
+  ZO_DISK_CACHE_GC_INTERVAL: "0"
+  ZO_S3_PROVIDER: ""
+  ZO_S3_SERVER_URL: ""
+  ZO_S3_REGION_NAME: "us-east-2"
+  ZO_S3_BUCKET_NAME: "o2-dev-bucket"
+  ZO_S3_BUCKET_PREFIX: ""
+  ZO_S3_CONNECT_TIMEOUT: "10"
+  ZO_S3_REQUEST_TIMEOUT: "3600"
+  ZO_S3_FEATURE_FORCE_HOSTED_STYLE: "false"
+  ZO_S3_FEATURE_HTTP1_ONLY: "false"
+  ZO_S3_FEATURE_HTTP2_ONLY: "false"
+  ZO_S3_ALLOW_INVALID_CERTIFICATES: "false"
+  ZO_S3_SYNC_TO_CACHE_INTERVAL: "600"
+  ZO_S3_MAX_RETRIES: "10"
+  ZO_S3_MAX_IDLE_PER_HOST: "0"
+  ZO_S3_CONNECTION_KEEPALIVE_TIMEOUT: "20"
+  ZO_USAGE_REPORTING_ENABLED: "false"
+  ZO_USAGE_REPORTING_MODE: "local"
+  ZO_USAGE_REPORTING_URL: "http://localhost:5080/api/_meta/usage/_json"
+  ZO_USAGE_REPORTING_CREDS: ""
+  ZO_USAGE_ORG: "_meta"
+  ZO_USAGE_BATCH_SIZE: "2000"
+  ZO_PRINT_KEY_CONFIG: "false"
+  ZO_PRINT_KEY_EVENT: "false"
+  ZO_PRINT_KEY_SQL: "true"
+  ZO_IGNORE_FILE_RETENTION_BY_STREAM: "false"
+  ZO_RUM_ENABLED: "false"
+  ZO_RUM_CLIENT_TOKEN: ""
+  ZO_RUM_APPLICATION_ID: ""
+  ZO_RUM_SERVICE: ""
+  ZO_RUM_ENV: ""
+  ZO_RUM_VERSION: "0.9.1"
+  ZO_RUM_ORGANIZATION_IDENTIFIER: "default"
+  ZO_RUM_API_VERSION: "v1"
+  ZO_RUM_INSECURE_HTTP: "false"
+  ZO_RUM_SITE: ""
+  ZO_COOKIE_MAX_AGE: "2592000"
+  ZO_COOKIE_SAME_SITE_LAX: "true"
+  ZO_COOKIE_SECURE_ONLY: "false"
+  ZO_PROF_PYROSCOPE_ENABLED: "false"
+  ZO_PROF_PYROSCOPE_SERVER_URL: "http://localhost:4040"
+  ZO_PROF_PYROSCOPE_PROJECT_NAME: "openobserve"
+  ZO_ENTRY_PER_SCHEMA_VERSION_ENABLED: "true"
+  ZO_MIN_AUTO_REFRESH_INTERVAL: "5"
+  ZO_MAX_DASHBOARD_SERIES: "100"
+  ZO_ALLOW_USER_DEFINED_SCHEMAS: "true"
+  ZO_SKIP_FORMAT_STREAM_NAME: "false"
+  ZO_MEM_TABLE_STREAMS: ""
+  ZO_DEFAULT_SCRAPE_INTERVAL: "15"
+  ZO_MEMORY_CIRCUIT_BREAKER_ENABLED: "false"
+  ZO_MEMORY_CIRCUIT_BREAKER_RATIO: "90"
+  ZO_MMDB_DATA_DIR: ""
+  ZO_MMDB_DISABLE_DOWNLOAD: "false"
+  ZO_MMDB_UPDATE_DURATION_DAYS: "30"
+  ZO_MMDB_GEOLITE_CITYDB_URL: "https://geoip.zinclabs.dev/GeoLite2-City.mmdb"
+  ZO_MMDB_GEOLITE_CITYDB_SHA256_URL: "https://geoip.zinclabs.dev/GeoLite2-ASN.sha256"
+  ZO_MMDB_GEOLITE_ASNDB_URL: "https://geoip.zinclabs.dev/GeoLite2-ASN.mmdb"
+  ZO_MMDB_GEOLITE_ASNDB_SHA256_URL: "https://geoip.zinclabs.dev/GeoLite2-ASN.sha256"
+  ZO_SELF_METRIC_CONSUMPTION_ENABLED: "false"
+  ZO_SELF_METRIC_CONSUMPTION_INTERVAL: "60"
+  ZO_SELF_METRIC_CONSUMPTION_ACCEPTLIST: ""
+  ZO_SWAGGER_ENABLED: "true"
+  ZO_STREAMING_ENABLED: "true"
+  ZO_PROMETHEUS_ENABLED: "false"
+  ZO_HISTOGRAM_ENABLED: "true"
+  ZO_SGRAPH_ENABLED: "true"
+  # Synthetics (introduced in v1.0.1)
+  ZO_SYNTHETICS_ENABLED: "false"
+  ZO_SYNTHETICS_API_ENDPOINT: ""
+  ZO_SYNTHETICS_BROWSERS: "chromium"
+  ZO_SYNTHETICS_DEVICES: "desktop:1440:900"
+  ZO_SYNTHETICS_LAMBDA_BROWSER: "o2"
+  ZO_SYNTHETICS_LAMBDA_NET: ""
+  ZO_SYNTHETICS_INSTALL_SCRIPT_URL: ""
+  ZO_SYNTHETICS_RECORDER_EXTENSION_URL: ""
+  ZO_SYNTHETICS_AGENT_STALE_SECS: "120"
+  ZO_SYNTHETICS_JOB_LEASE_SECS: "900"
+  ZO_SYNTHETICS_MAX_CHECK_BUDGET_SECS: "840"
+  ZO_SYNTHETICS_MAX_NET_TIMEOUT_MS: "300000"
+  ZO_SYNTHETICS_SCHEDULER_JITTER_ENABLED: "true"
+  ZO_SYNTHETICS_ORPHAN_DETECTION_ENABLED: "true"
+  # Alerts — composite / charts / eval (introduced in v1.0.1)
+  ZO_ALERT_CHART_ENABLED: "true"
+  ZO_ALERT_CHART_SIGNING_KEY: ""
+  ZO_ALERT_COMPOSITE_WRITES_ENABLED: "true"
+  ZO_ALERT_COMPOSITE_DEBOUNCE_SECS: "15"
+  ZO_ALERT_COMPOSITE_STALE_K: "3"
+  ZO_ALERT_COMPOSITE_SWEEP_SECS: "300"
+  ZO_ALERT_EVAL_LEDGER_RETENTION_DAYS: "97"
+  ZO_ALERT_TEST_SEND_PER_MINUTE: "6"
+  # Other (introduced in v1.0.1)
+  ZO_AI_SESSION_OWNER_TTL: "86400"
+  ZO_TRACE_TIME_INDEX_ENABLED: "true"
+  RUST_LOG: "info"
+  RUST_BACKTRACE: "0"
+
+---
+# Source: openobserve-standalone/templates/openobserve-service-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve-headless
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  clusterIP: None
+  ports:
+    - port: 5080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 5081
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/component: openobserve
+
+---
+# Source: openobserve-standalone/templates/openobserve-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+    prometheus.io/scrape: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 5081
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/component: openobserve
+
+---
+# Source: openobserve-standalone/templates/openobserve-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openobserve
+  namespace: "default"
+  labels:
+    helm.sh/chart: openobserve-standalone-1.0.1
+    app.kubernetes.io/name: openobserve-standalone
+    app.kubernetes.io/instance: openobserve
+    app.kubernetes.io/version: "v1.0.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openobserve-standalone
+      app.kubernetes.io/instance: openobserve
+  
+  serviceName: openobserve-headless
+  template:
+    metadata:
+      annotations:
+        checksum/config: 1fd1204c77365464b51c97087f5197d64dd832884e864f6909444392fc91c5a4
+      labels:
+        app.kubernetes.io/name: openobserve-standalone
+        app.kubernetes.io/instance: openobserve
+        app.kubernetes.io/component: openobserve
+    spec:
+      serviceAccountName: openobserve
+      securityContext:
+        fsGroup: 2000
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 10000
+      
+      initContainers:
+      containers:
+        - name: openobserve-standalone
+          securityContext:
+            {}
+          image: "o2cr.ai/openobserve/openobserve:v1.0.1"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5080
+            - name: grpc
+              containerPort: 5081
+          livenessProbe:
+           httpGet:
+             path: /healthz
+             port: 5080
+           initialDelaySeconds: 10
+           periodSeconds: 10
+           failureThreshold: 3
+          readinessProbe:
+           httpGet:
+             path: /healthz
+             port: 5080
+           initialDelaySeconds: 10
+           periodSeconds: 10
+           failureThreshold: 3
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          envFrom:
+            - configMapRef:
+                name: openobserve
+            - secretRef:
+                name: openobserve
+          env:
+            - name: ZO_ROOT_USER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-root
+                  key: ZO_ROOT_USER_EMAIL
+            - name: ZO_ROOT_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openobserve-root
+                  key: ZO_ROOT_USER_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      nodeSelector:
+        kubernetes.io/hostname: homerack
+      volumes:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      storageClassName: local-path-ssd
+      resources:
+        requests:
+          storage: "50Gi"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: openobserve
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - o2.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: openobserve
+              port: 5080
