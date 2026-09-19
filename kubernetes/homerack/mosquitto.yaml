@@ -52,9 +52,18 @@ spec:
         spec:
             nodeSelector:
                 kubernetes.io/hostname: homerack
-            # Auth files owned by group mosquitto (1883) and not world-readable, as mosquitto 2.x requires going forward.
+            # mosquitto 2.x requires its auth files to be owned by the mosquitto user (1883); Secret files are always root-owned.
             securityContext:
                 fsGroup: 1883
+            initContainers:
+                - name: auth-perms
+                  image: eclipse-mosquitto:2.1.2-alpine
+                  command: [sh, -c, "cp /secret/passwd-0 /secret/acl-0.conf /auth/ && chown 1883:1883 /auth/* && chmod 0600 /auth/*"]
+                  volumeMounts:
+                    - name: auth
+                      mountPath: /secret
+                    - name: auth-files
+                      mountPath: /auth
             containers:
                 - name: mosquitto
                   image: eclipse-mosquitto:2.1.2-alpine
@@ -81,10 +90,10 @@ spec:
                     - name: conf
                       mountPath: /mosquitto/config/mosquitto.conf
                       subPath: mosquitto.conf
-                    - name: auth
+                    - name: auth-files
                       mountPath: /mosquitto/config/passwd-0
                       subPath: passwd-0
-                    - name: auth
+                    - name: auth-files
                       mountPath: /mosquitto/config/acl-0.conf
                       subPath: acl-0.conf
                     - name: data
@@ -97,6 +106,8 @@ spec:
                   secret:
                     secretName: mosquitto-auth
                     defaultMode: 288
+                - name: auth-files
+                  emptyDir: {}
                 - name: data
                   persistentVolumeClaim:
                     claimName: mosquitto-data
