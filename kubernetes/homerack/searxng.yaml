@@ -1,8 +1,8 @@
-# SearXNG on homerack: private metasearch using only Startpage (Google results without Google seeing us).
+# SearXNG on homerack: private metasearch using only Google (no cookies, no account).
 # Outgoing searches are forced onto IPv4 (Airtel's shared CGNAT address) — the pod also has IPv6, which would
 # be our dedicated address. Reachable only on the LAN/tailnet via homerack-gateway.
-# Startpage fronts its search with an Anubis proof-of-work challenge; SearXNG solves it but ships the engine
-# inactive since 2026-09-10 (searxng/searxng#6669), so it is re-enabled below.
+# Startpage was tried first but on 2026-09-25 raised its Anubis proof-of-work to difficulty 6, beyond
+# SearXNG's solver (max 4; ~2 min per solve in this pod), so it only returned CAPTCHA errors.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -13,9 +13,9 @@ data:
         use_default_settings:
             engines:
                 keep_only:
-                    - startpage
-                    - startpage news
-                    - startpage images
+                    - google
+                    - google images
+                    - google news
         general:
             enable_metrics: false
         search:
@@ -30,15 +30,11 @@ data:
             source_ips:
                 - 0.0.0.0 # any local IPv4 address = never IPv6
         engines:
-            - name: startpage
-              inactive: false
-              timeout: 6.0 # first search each hour also solves the Anubis challenge
-            - name: startpage news
-              inactive: false
-              timeout: 6.0 # first search each hour also solves the Anubis challenge
-            - name: startpage images
-              inactive: false
-              timeout: 6.0 # first search each hour also solves the Anubis challenge
+            # google and google images ship disabled upstream.
+            - name: google
+              disabled: false
+            - name: google images
+              disabled: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,7 +52,7 @@ spec:
                 app: searxng
             annotations:
                 # Roll the pod when settings change (bump by hand; kubectl apply doesn't hash ConfigMaps).
-                config-revision: "1"
+                config-revision: "2"
         spec:
             nodeSelector:
                 kubernetes.io/hostname: homerack
