@@ -1,0 +1,132 @@
+# SearXNG on homerack: private metasearch using only Startpage (Google results without Google seeing us).
+# Outgoing searches are forced onto IPv4 (Airtel's shared CGNAT address) — the pod also has IPv6, which would
+# be our dedicated address. Reachable only on the LAN/tailnet via homerack-gateway.
+# Startpage fronts its search with an Anubis proof-of-work challenge; SearXNG solves it but ships the engine
+# inactive since 2026-09-10 (searxng/searxng#6669), so it is re-enabled below.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: searxng
+    namespace: default
+data:
+    settings.yml: |
+        use_default_settings:
+            engines:
+                keep_only:
+                    - startpage
+                    - startpage news
+                    - startpage images
+        general:
+            enable_metrics: false
+        search:
+            autocomplete: ""
+        server:
+            # secret_key comes from SEARXNG_SECRET, generated at container start (see the Deployment).
+            limiter: false
+            public_instance: false
+            image_proxy: true
+            method: POST
+        outgoing:
+            source_ips:
+                - 0.0.0.0 # any local IPv4 address = never IPv6
+        engines:
+            - name: startpage
+              inactive: false
+              timeout: 6.0 # first search each hour also solves the Anubis challenge
+            - name: startpage news
+              inactive: false
+              timeout: 6.0 # first search each hour also solves the Anubis challenge
+            - name: startpage images
+              inactive: false
+              timeout: 6.0 # first search each hour also solves the Anubis challenge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: searxng
+    namespace: default
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: searxng
+    template:
+        metadata:
+            labels:
+                app: searxng
+            annotations:
+                # Roll the pod when settings change (bump by hand; kubectl apply doesn't hash ConfigMaps).
+                config-revision: "1"
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            containers:
+                - name: searxng
+                  image: searxng/searxng:2026.9.25-12f8b6515
+                  # Fresh random secret every start; it only signs image-proxy URLs, so nothing to keep in sops.
+                  # No braces around the variable: apply-kubernetes.sh substitutes every braced upper-case placeholder.
+                  command:
+                    - /bin/sh
+                    - -c
+                    - export SEARXNG_SECRET="$(head -c 32 /dev/urandom | base64)"; exec /usr/local/searxng/entrypoint.sh
+                  env:
+                    # /etc/searxng is a read-only ConfigMap; don't try to chown it.
+                    - name: FORCE_OWNERSHIP
+                      value: "false"
+                  ports:
+                    - containerPort: 8080
+                      name: http
+                  resources:
+                    requests:
+                        cpu: 50m
+                        memory: 128Mi
+                    limits:
+                        cpu: 500m
+                        memory: 256Mi
+                  readinessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 8080
+                    periodSeconds: 10
+                  volumeMounts:
+                    - name: config
+                      mountPath: /etc/searxng
+                      readOnly: true
+                    - name: cache
+                      mountPath: /var/cache/searxng
+            volumes:
+                - name: config
+                  configMap:
+                    name: searxng
+                - name: cache
+                  emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: searxng
+    namespace: default
+spec:
+    ports:
+        - port: 8080
+          targetPort: 8080
+          name: http
+    selector:
+        app: searxng
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: searxng
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - search.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: searxng
+              port: 8080
