@@ -1,0 +1,154 @@
+# Vector log shipper, one pod per node (cloudrack and homerack), sending everything to VictoriaLogs.
+#   - pod/container logs from /var/log/pods; multi-line stack traces are joined into one entry
+#   - Talos service logs (machined, kubelet, etcd, containerd, apid): Talos machine.logging -> tcp://127.0.0.1:6050
+#   - kernel logs: Talos KmsgLogConfig -> tcp://127.0.0.1:6051
+# hostNetwork so Talos can reach it on 127.0.0.1; both ports only listen on loopback.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vector
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vector
+rules:
+  - apiGroups: [""]
+    resources: [pods, namespaces, nodes]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vector
+subjects:
+  - kind: ServiceAccount
+    name: vector
+    namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector
+  namespace: default
+data:
+  vector.yaml: |
+    data_dir: /vector-data-dir
+    sources:
+      pods:
+        type: kubernetes_logs
+      talos_services:
+        type: socket
+        mode: tcp
+        address: 127.0.0.1:6050
+        decoding: { codec: json }
+        framing: { method: newline_delimited }
+      talos_kernel:
+        type: socket
+        mode: tcp
+        address: 127.0.0.1:6051
+        decoding: { codec: json }
+        framing: { method: newline_delimited }
+    transforms:
+      # A new entry starts on any line that is not indented and not a "Caused by" / "... N more" continuation,
+      # so Java/Go/Node/Python stack traces land in VictoriaLogs as one entry.
+      pods_multiline:
+        type: reduce
+        inputs: [pods]
+        group_by: [file]
+        starts_when: >-
+          !match(string!(.message), r'^\s') &&
+          !match(string!(.message), r'^(Caused by|\.\.\. \d+ more)')
+        merge_strategies: { message: concat_newline }
+        expire_after_ms: 2000
+      pods_fields:
+        type: remap
+        inputs: [pods_multiline]
+        source: |
+          . = {
+            "_msg": .message,
+            "_time": .timestamp,
+            "node": .kubernetes.pod_node_name,
+            "namespace": .kubernetes.pod_namespace,
+            "pod": .kubernetes.pod_name,
+            "container": .kubernetes.container_name,
+            "stream": .stream,
+            "source": "pod"
+          }
+      talos_fields:
+        type: remap
+        inputs: [talos_services, talos_kernel]
+        source: |
+          .node = get_env_var!("VECTOR_SELF_NODE_NAME")
+          .source = "talos"
+          ._msg = del(.msg)
+          ._time = del(."talos-time")
+          .service = if exists(."talos-service") { del(."talos-service") } else { "kernel" }
+          .level = del(."talos-level")
+          del(.host)
+          del(.port)
+          del(.source_type)
+    sinks:
+      victorialogs:
+        type: elasticsearch
+        inputs: [pods_fields, talos_fields]
+        endpoints: [http://victorialogs.default.svc.cluster.local:9428/insert/elasticsearch/]
+        mode: bulk
+        api_version: v8
+        compression: gzip
+        healthcheck: { enabled: false }
+        query:
+          _stream_fields: node,source,namespace,pod,container,service
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vector
+  namespace: default
+  labels:
+    app: vector
+spec:
+  selector:
+    matchLabels:
+      app: vector
+  template:
+    metadata:
+      labels:
+        app: vector
+    spec:
+      serviceAccountName: vector
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: vector
+          image: timberio/vector:0.58.0-distroless-libc
+          args: [--config, /etc/vector/vector.yaml]
+          env:
+            - name: VECTOR_SELF_NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: VECTOR_SELF_POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: VECTOR_SELF_POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: config, mountPath: /etc/vector, readOnly: true }
+            - { name: data, mountPath: /vector-data-dir }
+            - { name: var-log, mountPath: /var/log, readOnly: true }
+      volumes:
+        - name: config
+          configMap: { name: vector }
+        # checkpoints of how far each log file has been read, so restarts don't resend logs
+        - name: data
+          hostPath: { path: /var/lib/vector, type: DirectoryOrCreate }
+        - name: var-log
+          hostPath: { path: /var/log }

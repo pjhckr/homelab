@@ -1,0 +1,77 @@
+# VictoriaLogs on cloudrack: stores pod, Talos service and kernel logs shipped by Vector (vector.yaml).
+# Data: hostPath /var/mnt/victorialogs (EPHEMERAL), 30 days or 10 GiB, whichever comes first.
+# Queried from Grafana (VictoriaLogs datasource); its own UI is at /select/vmui on port 9428.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victorialogs
+  namespace: default
+  labels:
+    app: victorialogs
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: victorialogs
+  template:
+    metadata:
+      labels:
+        app: victorialogs
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cloudrack
+      containers:
+        - name: victorialogs
+          image: victoriametrics/victoria-logs:v1.52.0
+          args:
+            - -storageDataPath=/data
+            - -retentionPeriod=30d
+            - -retention.maxDiskSpaceUsageBytes=10GiB
+          ports:
+            - name: http
+              containerPort: 9428
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 384Mi }
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          hostPath:
+            path: /var/mnt/victorialogs
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: victorialogs
+  namespace: default
+  labels:
+    app: victorialogs
+spec:
+  selector:
+    app: victorialogs
+  ports:
+    - name: http
+      port: 9428
+      targetPort: http
+---
+# Lets Prometheus scrape VictoriaLogs' own metrics (ingestion rate, disk use).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: victorialogs
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: victorialogs
+  endpoints:
+    - port: http
