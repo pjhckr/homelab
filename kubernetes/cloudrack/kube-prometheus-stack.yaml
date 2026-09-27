@@ -1,14 +1,16 @@
 # kube-prometheus-stack (chart 91.7.0), rendered to plain manifests so the deploy pipeline applies it.
 # cloudrack: Prometheus Operator, Prometheus, Alertmanager, Grafana, kube-state-metrics. Every node: node-exporter.
 # Grafana: https://grafana.${DOMAIN} (cloudrack gateway, tailnet only); login from default/grafana-admin
-# in secrets.enc.yaml. Prometheus data: hostPath /var/mnt/prometheus on cloudrack (EPHEMERAL), 15d / 9GB.
-# etcd, scheduler and controller-manager are scraped on the node IP; the Talos config binds their metrics
-# to 0.0.0.0 and opens the ports (NetworkRuleConfig monitoring-from-pods).
+# in secrets.enc.yaml. Prometheus data: hostPath /var/mnt/prometheus on cloudrack (EPHEMERAL) through the static
+# PV below, 15d / 9GB. etcd, scheduler and controller-manager are scraped on the node IP; the Talos config binds
+# their metrics to 0.0.0.0 and opens the ports (NetworkRuleConfig monitoring-from-pods).
 #
 # To change it: edit the values below, save them without the "# " prefix to v.yaml, run
 #   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 #   helm template kps prometheus-community/kube-prometheus-stack --version 91.7.0 -n default -f v.yaml --include-crds
-# and replace everything after the "rendered by helm" line with the output.
+# replace everything after the "rendered by helm" line with the output, then add
+# "runtimeClassName: privileged" to the node-exporter DaemonSet's pod spec: the chart has no option for it, and
+# default's baseline PodSecurity rejects its hostNetwork/hostPID/hostPath otherwise (see homerack/homebridge.yaml).
 #
 # values:
 # fullnameOverride: kps
@@ -33,10 +35,15 @@
 #     serviceMonitorSelectorNilUsesHelmValues: false
 #     podMonitorSelectorNilUsesHelmValues: false
 #     ruleSelectorNilUsesHelmValues: false
-#     # hostPath: a volume named like the operator's default DB volume replaces its emptyDir
-#     volumes:
-#       - name: prometheus-kps-prometheus-db
-#         hostPath: { path: /var/mnt/prometheus, type: DirectoryOrCreate }
+#     # Data in hostPath /var/mnt/prometheus via the static PV "prometheus-data" (defined above the rendered
+#     # part); a PVC passes default's baseline PodSecurity, a hostPath volume in the pod does not.
+#     storageSpec:
+#       volumeClaimTemplate:
+#         spec:
+#           storageClassName: ""
+#           volumeName: prometheus-data
+#           accessModes: [ReadWriteOnce]
+#           resources: { requests: { storage: 10Gi } }
 #     initContainers:
 #       - name: chown-data
 #         image: busybox:1.37
@@ -60,6 +67,9 @@
 #     userKey: admin-user
 #     passwordKey: admin-password
 #   resources: { requests: { cpu: 20m, memory: 128Mi }, limits: { memory: 256Mi } }
+#   env:
+#     # Grafana 13's client-go waits forever for watch bookmarks its embedded apiserver never sends
+#     KUBE_FEATURE_WatchListClient: "false"
 #   plugins:
 #     - victoriametrics-logs-datasource
 #   additionalDataSources:
@@ -87,6 +97,25 @@
 # kubeScheduler:
 #   service: { port: 10259, targetPort: 10259 }
 #   serviceMonitor: { https: true, insecureSkipVerify: true }
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /var/mnt/prometheus
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - { key: kubernetes.io/hostname, operator: In, values: [cloudrack] }
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -78820,6 +78849,7 @@ spec:
         release: kps
         jobLabel: node-exporter
     spec:
+      runtimeClassName: privileged # added after rendering, see header
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 65534
@@ -79139,6 +79169,8 @@ spec:
               value: /var/lib/grafana-search/bleve
             - name: GOMEMLIMIT
               value: "230MiB"
+            - name: "KUBE_FEATURE_WatchListClient"
+              value: "false"
           livenessProbe:
             failureThreshold: 10
             httpGet:
@@ -79522,6 +79554,16 @@ spec:
       release: "kps"
 
   scrapeConfigNamespaceSelector: {}
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: ""
+        volumeName: prometheus-data
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -79546,11 +79588,6 @@ spec:
       - mountPath: /prometheus
         name: prometheus-kps-prometheus-db
   portName: http-web
-  volumes:
-    - hostPath:
-        path: /var/mnt/prometheus
-        type: DirectoryOrCreate
-      name: prometheus-kps-prometheus-db
   hostNetwork: false
 
 ---

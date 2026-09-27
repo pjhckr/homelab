@@ -3,6 +3,7 @@
 #   - Talos service logs (machined, kubelet, etcd, containerd, apid): Talos machine.logging -> tcp://127.0.0.1:6050
 #   - kernel logs: Talos KmsgLogConfig -> tcp://127.0.0.1:6051
 # hostNetwork so Talos can reach it on 127.0.0.1; both ports only listen on loopback.
+# RuntimeClass "privileged" (homerack/homebridge.yaml) exempts it from default's baseline PodSecurity.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -122,6 +123,7 @@ spec:
         app: vector
     spec:
       serviceAccountName: vector
+      runtimeClassName: privileged
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       tolerations:
