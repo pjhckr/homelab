@@ -38,6 +38,9 @@
 #     # Data in hostPath /var/lib/prometheus via the static PV "prometheus-data" (defined above the rendered
 #     # part); a PVC passes default's baseline PodSecurity, a hostPath volume in the pod does not.
 #     storageSpec:
+#       # mount the volume root, which chown-data hands to Prometheus' uid (the default prometheus-db subPath
+#       # is created by kubelet as root after the init container ran)
+#       disableMountSubPath: true
 #       volumeClaimTemplate:
 #         spec:
 #           storageClassName: ""
@@ -47,7 +50,7 @@
 #     initContainers:
 #       - name: chown-data
 #         image: busybox:1.37
-#         command: [chown, "1000:2000", /prometheus]
+#         command: [chown, -R, "1000:2000", /prometheus]
 #         securityContext: { runAsUser: 0, runAsNonRoot: false }
 #         volumeMounts:
 #           - { name: prometheus-kps-prometheus-db, mountPath: /prometheus }
@@ -79555,6 +79558,7 @@ spec:
 
   scrapeConfigNamespaceSelector: {}
   storage:
+    disableMountSubPath: true
     volumeClaimTemplate:
       spec:
         accessModes:
@@ -79577,6 +79581,7 @@ spec:
   initContainers:
     - command:
       - chown
+      - -R
       - 1000:2000
       - /prometheus
       image: busybox:1.37
