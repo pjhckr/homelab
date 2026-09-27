@@ -4,7 +4,7 @@
 # Post-restore edits in config.json: zigbee2mqtt plugin -> mqtt://mosquitto.default.svc.cluster.local:1883 with the
 # homebridge password from Secret default/mqtt-credentials; UI proxyHost points at its public hostname.
 # Bridge username/pin unchanged, so HomeKit pairings carry over.
-# RuntimeClass "privileged" (below) is shared with jellyfin: same runc runtime, the name only matches the PodSecurity
+# RuntimeClass "privileged" (below) is shared with vector and node-exporter: same runc runtime, the name only matches the PodSecurity
 # exemption in controlplane.yaml, so pods using it may use hostNetwork/privileged while default stays at baseline.
 apiVersion: node.k8s.io/v1
 kind: RuntimeClass
