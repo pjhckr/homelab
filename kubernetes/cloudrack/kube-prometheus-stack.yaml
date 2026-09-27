@@ -1,7 +1,7 @@
 # kube-prometheus-stack (chart 91.7.0), rendered to plain manifests so the deploy pipeline applies it.
 # cloudrack: Prometheus Operator, Prometheus, Alertmanager, Grafana, kube-state-metrics. Every node: node-exporter.
 # Grafana: https://grafana.${DOMAIN} (cloudrack gateway, tailnet only); login from default/grafana-admin
-# in secrets.enc.yaml. Prometheus data: hostPath /var/mnt/prometheus on cloudrack (EPHEMERAL) through the static
+# in secrets.enc.yaml. Prometheus data: hostPath /var/lib/prometheus on cloudrack (EPHEMERAL) through the static
 # PV below, 15d / 9GB. etcd, scheduler and controller-manager are scraped on the node IP; the Talos config binds
 # their metrics to 0.0.0.0 and opens the ports (NetworkRuleConfig monitoring-from-pods).
 #
@@ -35,7 +35,7 @@
 #     serviceMonitorSelectorNilUsesHelmValues: false
 #     podMonitorSelectorNilUsesHelmValues: false
 #     ruleSelectorNilUsesHelmValues: false
-#     # Data in hostPath /var/mnt/prometheus via the static PV "prometheus-data" (defined above the rendered
+#     # Data in hostPath /var/lib/prometheus via the static PV "prometheus-data" (defined above the rendered
 #     # part); a PVC passes default's baseline PodSecurity, a hostPath volume in the pod does not.
 #     storageSpec:
 #       volumeClaimTemplate:
@@ -66,7 +66,7 @@
 #     existingSecret: grafana-admin
 #     userKey: admin-user
 #     passwordKey: admin-password
-#   resources: { requests: { cpu: 20m, memory: 128Mi }, limits: { memory: 256Mi } }
+#   resources: { requests: { cpu: 20m, memory: 256Mi }, limits: { memory: 512Mi } }
 #   env:
 #     # Grafana 13's client-go waits forever for watch bookmarks its embedded apiserver never sends
 #     KUBE_FEATURE_WatchListClient: "false"
@@ -108,7 +108,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   hostPath:
-    path: /var/mnt/prometheus
+    path: /var/lib/prometheus
     type: DirectoryOrCreate
   nodeAffinity:
     required:
@@ -79168,7 +79168,7 @@ spec:
             - name: GF_UNIFIED_STORAGE_INDEX_PATH
               value: /var/lib/grafana-search/bleve
             - name: GOMEMLIMIT
-              value: "230MiB"
+              value: "460MiB"
             - name: "KUBE_FEATURE_WatchListClient"
               value: "false"
           livenessProbe:
@@ -79184,10 +79184,10 @@ spec:
               port: grafana
           resources:
             limits:
-              memory: 256Mi
+              memory: 512Mi
             requests:
               cpu: 20m
-              memory: 128Mi
+              memory: 256Mi
       nodeSelector:
         kubernetes.io/hostname: cloudrack
       volumes:
