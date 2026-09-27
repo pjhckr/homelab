@@ -93,6 +93,8 @@
 #       node-exporter-full: { gnetId: 1860, revision: 41, datasource: Prometheus }
 #       talos-logs: { gnetId: 25309, datasource: VictoriaLogs }
 # kubeEtcd:
+#   # etcd is a Talos system service, not a pod, so the Service needs a fixed endpoint (filled by apply-kubernetes.sh)
+#   endpoints: ["${CLOUDRACK_TS_IP}"]
 #   service: { port: 2381, targetPort: 2381 }
 # kubeControllerManager:
 #   service: { port: 10257, targetPort: 10257 }
@@ -78690,8 +78692,6 @@ spec:
       port: 2381
       protocol: TCP
       targetPort: 2381
-  selector:
-    component: etcd
   type: ClusterIP
 ---
 # Source: kube-prometheus-stack/templates/exporters/kube-proxy/service.yaml
@@ -79480,6 +79480,32 @@ spec:
               - {key: app.kubernetes.io/name, operator: In, values: [alertmanager]}
               - {key: alertmanager, operator: In, values: [kps-alertmanager]}
   portName: http-web
+
+---
+# Source: kube-prometheus-stack/templates/exporters/kube-etcd/endpoints.yaml
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: kps-kube-etcd
+  labels:
+    app: kube-prometheus-stack-kube-etcd
+    k8s-app: etcd-server
+    
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: kps
+    app.kubernetes.io/version: "91.7.0"
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    chart: kube-prometheus-stack-91.7.0
+    release: "kps"
+    heritage: "Helm"
+  namespace: kube-system
+subsets:
+  - addresses:
+      - ip: ${CLOUDRACK_TS_IP}
+    ports:
+      - name: http-metrics
+        port: 2381
+        protocol: TCP
 
 ---
 # Source: kube-prometheus-stack/templates/prometheus/prometheus.yaml
