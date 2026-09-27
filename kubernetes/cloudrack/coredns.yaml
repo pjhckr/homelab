@@ -1,0 +1,15 @@
+# CoreDNS is deployed and owned by Talos (bootstrap manifests, refreshed by `talosctl upgrade-k8s`); this file
+# only adds one field to its kube-dns Service. Server-side apply keeps it: Talos doesn't manage the field.
+#
+# One CoreDNS replica runs on each node (Talos' manifest prefers spreading; after a restart that stacks both on
+# one node, delete one pod and it reschedules to the other). PreferSameNode makes pods ask the CoreDNS on their
+# own node, which forwards external names to that node's Talos host DNS: homerack -> Flint 3/AdGuard in India,
+# cloudrack -> VPS resolvers in France. Without it, half of homerack's lookups crossed Tailscale to France
+# (~200 ms per query, ~840 ms per external name with ndots:5) and got France-located CDN answers.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-dns
+  namespace: kube-system
+spec:
+  trafficDistribution: PreferSameNode
