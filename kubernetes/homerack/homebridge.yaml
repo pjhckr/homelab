@@ -25,6 +25,31 @@ spec:
         requests:
             storage: 2Gi
 ---
+# The image's avahi-daemon.conf, plus allow-interfaces: with hostNetwork avahi otherwise also joins flannel.1/cni0/veth*
+# and publishes the bridge hostname with pod-network addresses, so iPhones resolve it to an unreachable IP.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: homebridge-avahi
+    namespace: default
+data:
+    avahi-daemon.conf: |
+        [server]
+        use-ipv4=yes
+        use-ipv6=no
+        allow-interfaces=enp2s0
+        enable-dbus=yes
+        ratelimit-interval-usec=1000000
+        ratelimit-burst=1000
+        [wide-area]
+        enable-wide-area=yes
+        [rlimits]
+        rlimit-core=0
+        rlimit-data=4194304
+        rlimit-fsize=0
+        rlimit-nofile=768
+        rlimit-stack=4194304
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -82,10 +107,16 @@ spec:
                   volumeMounts:
                     - name: data
                       mountPath: /homebridge
+                    - name: avahi
+                      mountPath: /etc/avahi/avahi-daemon.conf
+                      subPath: avahi-daemon.conf
             volumes:
                 - name: data
                   persistentVolumeClaim:
                     claimName: homebridge-data
+                - name: avahi
+                  configMap:
+                    name: homebridge-avahi
 ---
 apiVersion: v1
 kind: Service
