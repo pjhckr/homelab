@@ -44,6 +44,8 @@ spec:
                       value: "15000"
                     - name: BUILTIN_KNABEN_SEARCH_TIMEOUT
                       value: "30000"
+                    - name: MAX_ADDONS # default 15
+                      value: "50"
                   envFrom:
                     - secretRef:
                         name: aiostreams-env
