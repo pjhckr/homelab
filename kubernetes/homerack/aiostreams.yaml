@@ -38,6 +38,12 @@ spec:
                 - name: aiostreams
                   # Upstream publishes no stable version tags; :latest matches the previous setups.
                   image: ghcr.io/viren070/aiostreams:latest
+                  env:
+                    # Defaults are 7s per addon and 15s for Knaben, too tight for slow public scrapers.
+                    - name: DEFAULT_TIMEOUT
+                      value: "15000"
+                    - name: BUILTIN_KNABEN_SEARCH_TIMEOUT
+                      value: "30000"
                   envFrom:
                     - secretRef:
                         name: aiostreams-env
