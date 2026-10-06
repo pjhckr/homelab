@@ -46,6 +46,8 @@ spec:
                       value: "30000"
                     - name: MAX_ADDONS # default 15
                       value: "50"
+                    - name: MANIFEST_TIMEOUT # default 3s; WebStreamr's manifest is often slower
+                      value: "10000"
                   envFrom:
                     - secretRef:
                         name: aiostreams-env
