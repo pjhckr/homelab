@@ -1,0 +1,264 @@
+# Claude Code on homerack, driven from the Claude mobile app via `claude remote-control`, with a neko
+# Google Chrome next to it: chrome-devtools-mcp controls it over CDP on 127.0.0.1:9222 (pod-local only),
+# and you watch/take over the same browser live at https://chrome.${DOMAIN} (tailnet/LAN only, like every
+# homerack route). Chosen after laptop tests: neko's real-display Chrome reads as a normal browser
+# (webdriver=false, CreepJS 0% headless, BrowserScan "Normal"); headless Chrome, browserless, steel and
+# Lightpanda were flagged.
+# The neko container needs the "privileged" RuntimeClass (defined in homebridge.yaml) only to open the
+# Intel iGPU (/dev/dri): real WebGL for Chrome and VAAPI video encoding for the WebRTC stream.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: claude-code-data
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-ssd
+    resources:
+        requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: claude-code-chrome
+    namespace: default
+data:
+    # neko's stock launcher, minus --disable-gpu/--disable-software-rasterizer (we want the iGPU), plus
+    # CDP on 127.0.0.1:9222. Chrome refuses remote debugging on its default profile dir, hence chrome-profile.
+    google-chrome.conf: |
+        [program:google-chrome]
+        environment=HOME="/home/%(ENV_USER)s",USER="%(ENV_USER)s",DISPLAY="%(ENV_DISPLAY)s"
+        command=/usr/bin/google-chrome
+          --no-sandbox
+          --remote-debugging-port=9222
+          --window-position=0,0
+          --display=%(ENV_DISPLAY)s
+          --user-data-dir=/home/neko/chrome-profile
+          --no-first-run
+          --start-maximized
+          --disable-file-system
+          --disable-dev-shm-usage
+        stopsignal=INT
+        autorestart=true
+        priority=800
+        user=%(ENV_USER)s
+        stdout_logfile=/var/log/neko/google-chrome.log
+        stdout_logfile_maxbytes=100MB
+        stdout_logfile_backups=10
+        redirect_stderr=true
+
+        [program:openbox]
+        environment=HOME="/home/%(ENV_USER)s",USER="%(ENV_USER)s",DISPLAY="%(ENV_DISPLAY)s"
+        command=/usr/bin/openbox --config-file /etc/neko/openbox.xml
+        autorestart=true
+        priority=300
+        user=%(ENV_USER)s
+        stdout_logfile=/var/log/neko/openbox.log
+        stdout_logfile_maxbytes=100MB
+        stdout_logfile_backups=10
+        redirect_stderr=true
+    # neko's policies set DeveloperToolsAvailability=2, which blocks CDP; its forced ad-block extensions are
+    # dropped too so the browser looks like a stock Chrome.
+    policies.json: |
+        {
+          "DeveloperToolsAvailability": 1,
+          "BrowserSignin": 0,
+          "SyncDisabled": true,
+          "PasswordManagerEnabled": false,
+          "AutofillCreditCardEnabled": false,
+          "DefaultNotificationsSetting": 2,
+          "BrowserAddPersonEnabled": false,
+          "BrowserGuestModeEnabled": false,
+          "CommandLineFlagSecurityWarningsEnabled": false
+        }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: claude-code
+    namespace: default
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # single RWO volume; one Chrome per profile
+    selector:
+        matchLabels:
+            app: claude-code
+    template:
+        metadata:
+            labels:
+                app: claude-code
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            # /dev/dri needs a privileged container, which baseline PodSecurity blocks; this class is exempt
+            runtimeClassName: privileged
+            containers:
+                - name: neko
+                  image: ghcr.io/m1k1o/neko/intel-google-chrome:3
+                  securityContext:
+                    privileged: true # GPU device access only
+                  env:
+                    - name: NEKO_DESKTOP_SCREEN
+                      value: 1920x1080@30
+                    - name: NEKO_MEMBER_PROVIDER
+                      value: multiuser
+                    - name: NEKO_WEBRTC_UDPMUX # all WebRTC media on one port, exposed on the tailnet IP below
+                      value: "52100"
+                    - name: NEKO_WEBRTC_TCPMUX
+                      value: "52100"
+                    - name: NEKO_WEBRTC_NAT1TO1
+                      value: ${HOMERACK_TS_IP}
+                    - name: NEKO_WEBRTC_ICELITE
+                      value: "true"
+                  envFrom:
+                    - secretRef:
+                        name: claude-code-env # NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD / _USER_PASSWORD
+                  ports:
+                    - containerPort: 8080
+                      name: http
+                    - containerPort: 52100
+                      name: webrtc-udp
+                      protocol: UDP
+                    - containerPort: 52100
+                      name: webrtc-tcp
+                  resources:
+                    requests:
+                        cpu: 200m
+                        memory: 1Gi
+                    limits:
+                        memory: 4Gi
+                  readinessProbe:
+                    httpGet:
+                        path: /health
+                        port: 8080
+                    periodSeconds: 10
+                  volumeMounts:
+                    - name: data
+                      mountPath: /home/neko/chrome-profile
+                      subPath: chrome-profile # logins survive restarts
+                    - name: chrome-config
+                      mountPath: /etc/neko/supervisord/google-chrome.conf
+                      subPath: google-chrome.conf
+                    - name: chrome-config
+                      mountPath: /etc/opt/chrome/policies/managed/policies.json
+                      subPath: policies.json
+                    - name: dri
+                      mountPath: /dev/dri
+                    - name: dshm
+                      mountPath: /dev/shm
+                - name: claude
+                  image: node:22-bookworm-slim
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    runAsNonRoot: true
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                        drop: ["ALL"]
+                  workingDir: /data/workspace
+                  command: ["bash", "-c"]
+                  args:
+                    - |
+                      set -euo pipefail
+                      mkdir -p "$HOME" /data/workspace
+                      npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.294 chrome-devtools-mcp@1.10.1
+                      claude mcp get chrome-devtools >/dev/null 2>&1 || claude mcp add --scope user chrome-devtools -- \
+                        chrome-devtools-mcp --browser-url=http://127.0.0.1:9222 --no-usage-statistics --no-performance-crux
+                      exec claude remote-control --name homerack
+                  env:
+                    - name: HOME
+                      value: /data/home # ~/.claude, ~/.claude.json and MCP config live on the PVC
+                    - name: NPM_CONFIG_PREFIX
+                      value: /data/npm # cached installs, so restarts are fast
+                    - name: PATH
+                      value: /data/npm/bin:/usr/local/bin:/usr/bin:/bin
+                    - name: DISABLE_AUTOUPDATER # version is pinned above
+                      value: "1"
+                    - name: CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS
+                      value: "1"
+                    - name: CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS
+                      value: "1"
+                  envFrom:
+                    - secretRef:
+                        name: claude-code-env # CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`
+                  resources:
+                    requests:
+                        cpu: 100m
+                        memory: 512Mi
+                    limits:
+                        memory: 2Gi
+                  volumeMounts:
+                    - name: data
+                      mountPath: /data
+            volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: claude-code-data
+                - name: chrome-config
+                  configMap:
+                    name: claude-code-chrome
+                - name: dri
+                  hostPath:
+                    path: /dev/dri
+                    type: Directory
+                - name: dshm # Chrome needs more than the default 64Mi /dev/shm
+                  emptyDir:
+                    medium: Memory
+                    sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: claude-code-neko
+    namespace: default
+spec:
+    ports:
+        - port: 8080
+          targetPort: 8080
+          name: http
+    selector:
+        app: claude-code
+---
+# WebRTC media can't go through the HTTP gateway; publish the mux port on homerack's tailnet IP only.
+apiVersion: v1
+kind: Service
+metadata:
+    name: claude-code-webrtc
+    namespace: default
+spec:
+    externalIPs:
+        - ${HOMERACK_TS_IP}
+    ports:
+        - port: 52100
+          targetPort: 52100
+          protocol: UDP
+          name: webrtc-udp
+        - port: 52100
+          targetPort: 52100
+          protocol: TCP
+          name: webrtc-tcp
+    selector:
+        app: claude-code
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    name: claude-code-neko
+    namespace: default
+spec:
+    parentRefs:
+        - name: homerack-gateway
+          namespace: default
+          sectionName: https-wildcard
+    hostnames:
+        - chrome.${DOMAIN}
+    rules:
+        - backendRefs:
+            - name: claude-code-neko
+              port: 8080
+          # neko's WebSocket signalling stays open for the whole session
+          timeouts:
+            request: 0s
