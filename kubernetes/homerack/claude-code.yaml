@@ -167,7 +167,9 @@ spec:
                       npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.294 chrome-devtools-mcp@1.10.1
                       claude mcp get chrome-devtools >/dev/null 2>&1 || claude mcp add --scope user chrome-devtools -- \
                         chrome-devtools-mcp --browser-url=http://127.0.0.1:9222 --no-usage-statistics --no-performance-crux
-                      exec claude remote-control --name homerack
+                      # Remote Control needs a full login (setup-token is inference-only): until someone runs
+                      # `kubectl exec -it deploy/claude-code -c claude -- claude auth login` once, keep retrying.
+                      while true; do claude remote-control --name homerack || sleep 30; done
                   env:
                     - name: HOME
                       value: /data/home # ~/.claude, ~/.claude.json and MCP config live on the PVC
@@ -181,9 +183,6 @@ spec:
                       value: "1"
                     - name: CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS
                       value: "1"
-                  envFrom:
-                    - secretRef:
-                        name: claude-code-env # CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`
                   resources:
                     requests:
                         cpu: 100m
