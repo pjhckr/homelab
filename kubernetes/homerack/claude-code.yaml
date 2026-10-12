@@ -38,6 +38,9 @@ data:
           --user-data-dir=/home/neko/chrome-profile
           --no-first-run
           --start-maximized
+          --ignore-gpu-blocklist
+          --use-gl=angle
+          --use-angle=gl
           --disable-file-system
           --disable-dev-shm-usage
         stopsignal=INT
@@ -158,17 +161,21 @@ spec:
                     allowPrivilegeEscalation: false
                     capabilities:
                         drop: ["ALL"]
-                  workingDir: /data/workspace
                   command: ["bash", "-c"]
                   args:
                     - |
                       set -euo pipefail
-                      mkdir -p "$HOME" /data/workspace
+                      # workspace under $HOME: a workingDir would be created root-owned by the kubelet
+                      mkdir -p "$HOME/workspace" && cd "$HOME/workspace"
                       npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.294 chrome-devtools-mcp@1.10.1
                       claude mcp get chrome-devtools >/dev/null 2>&1 || claude mcp add --scope user chrome-devtools -- \
                         chrome-devtools-mcp --browser-url=http://127.0.0.1:9222 --no-usage-statistics --no-performance-crux
                       # Remote Control needs a full login (setup-token is inference-only): until someone runs
                       # `kubectl exec -it deploy/claude-code -c claude -- claude auth login` once, keep retrying.
+                      # Pre-accept the workspace trust dialog, which can't be answered without a TTY.
+                      node -e 'const fs = require("fs"), p = process.env.HOME + "/.claude.json", w = process.cwd();
+                        if (fs.existsSync(p)) { const c = JSON.parse(fs.readFileSync(p, "utf8")); c.projects ??= {};
+                        c.projects[w] = { ...c.projects[w], hasTrustDialogAccepted: true }; fs.writeFileSync(p, JSON.stringify(c, null, 2)); }'
                       while true; do claude remote-control --name homerack || sleep 30; done
                   env:
                     - name: HOME
