@@ -5,6 +5,7 @@ ZIGBEE_SERIAL_PORT: ENC[AES256_GCM,data:bO77EtLVXN5FCdQLXs5/KXNAjaFybj2aeg==,iv:
 STORAGEBOX_HOST: ENC[AES256_GCM,data:9OA4BaBQUsNzJ2qhFqSedHYnVbqMre6MKQY=,iv:ePZ3SWhDs67hbvaS0iskq/cCAwx5ablIEto/Bvv5uYg=,tag:WGMHeJ81h0nk4Ng94fTmsw==,type:str]
 DOMAIN: ENC[AES256_GCM,data:155U+aUldbV/aQ==,iv:fv/ViDdZbZRwCSoIjxMWFry4Ej7teOIriko+V+NtbQw=,tag:1vcvikYh7fOx+xp1phXXDA==,type:str]
 ACME_EMAIL: ENC[AES256_GCM,data:hdHYBqj8IcOdzZGbPL4jDAdLpKPNviYRVg==,iv:TC8FYp0eDewejlDJTwCWPAcnxzp3fh5SwpURE1hM74g=,tag:GQXLwJ7Ee4YWB0EzaqSS4g==,type:str]
+CLOUDRACK_IP: ENC[AES256_GCM,data:pP12o7u+B3DDCEI0j6Y=,iv:9RBEQfJzN464ziWnmpffIjrQpPigWJlEQP37QWNxfwA=,tag:2sKQVopVqzypyxzOR4DjeA==,type:str]
 sops:
     age:
         - enc: |
@@ -16,7 +17,7 @@ sops:
             JcMHhi3vYObBExshet+N26Bd+fpgYlAyvXw1khZHlXjl39uGNOns7g==
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
-    lastmodified: "2026-09-17T11:39:45Z"
-    mac: ENC[AES256_GCM,data:6V2yikRqJDIKD3q5wAiqCA4SFz/uoOkk4fEdIWFSzw58DVw2sf94DEZRcUVCSvWqwq1Y51VR7u6HbFiCU63FZVXy7WlQE/fm34Iob80tKQnrx6iOMgoA26zM5Mml4ZKYsjEbvHtXuLLoui6G8TVAVw/zOVoDxrxm94VhIoddLpw=,iv:wgG6R6vhqLmU1E8W8b3dd8I9kbANbInXpkQ9INlCcto=,tag:OpIzcmpJ/JRlfMPUqAWX2g==,type:str]
+    lastmodified: "2026-10-14T15:55:21Z"
+    mac: ENC[AES256_GCM,data:K+leOzpB2DdBUMe/koeVEnh+bIxkHplh2usfASgbZZwn4Vne7HgMWBUXgF2GMYhK3sc8Ao9WxANAfskMMQiHBeWavNvqHMnY7enq3eRFZqGs2GRc5HAUjw6G6QqzudcsBOh0xFmSELvRiEdHo5fjlBzi7YfDiDX/T+ap5sKH+i8=,iv:dUyknVDzzf4PINMl85FDXPpiL+mUy5tFZAPUwHYrFSo=,tag:RVD3+KLFjTIp95AZ92gfWQ==,type:str]
     unencrypted_suffix: _unencrypted
     version: 3.13.3
