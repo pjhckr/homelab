@@ -125,6 +125,9 @@ spec:
               port: health
             initialDelaySeconds: 5
             periodSeconds: 5
+            # /ready lists ConfigMaps on the API server (cloudrack, across Tailscale): ~1.2 s from homerack,
+            # past the 1 s default.
+            timeoutSeconds: 5
           volumeMounts:
             - name: config-volume
               mountPath: /etc/config/
