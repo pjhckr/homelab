@@ -1,0 +1,95 @@
+# Tailscale on each node, for access only: it brings up tailscale0 on the host, so the gateways (Service
+# externalIPs = the nodes' Tailscale IPs, ${CLOUDRACK_TS_IP} / ${HOMERACK_TS_IP}) and neko's WebRTC port answer
+# on the tailnet. Node-to-node traffic runs over KubeSpan, so the cluster doesn't depend on this; it depends
+# on the cluster.
+# Replaces the Talos system extension (same version, same settings): its identity lives in /var/lib/tailscale
+# on the node, so the pod comes up as the same "cloudrack"/"homerack" device with the same IP. A node only runs
+# it once its Talos config carries the label jainrack.io/tailscale=pod (set when the extension was removed).
+# No auth key: the existing state is used. If a node's state is ever lost, add TS_AUTHKEY (an OAuth client
+# secret with tags tag:cloud-server/tag:home-server) to re-register.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    name: tailscale
+    namespace: kube-system # no PodSecurity enforcement here: needs host network and a privileged container
+    labels:
+        app: tailscale
+spec:
+    selector:
+        matchLabels:
+            app: tailscale
+    updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+            maxUnavailable: 1
+    template:
+        metadata:
+            labels:
+                app: tailscale
+        spec:
+            nodeSelector:
+                jainrack.io/tailscale: pod
+            hostNetwork: true
+            dnsPolicy: Default # the node's resolver (Talos host DNS), not CoreDNS
+            priorityClassName: system-node-critical
+            automountServiceAccountToken: false
+            tolerations:
+                - operator: Exists
+            containers:
+                - name: tailscale
+                  image: docker.io/tailscale/tailscale:v1.102.3
+                  command: ["sh", "-c"]
+                  args:
+                    - |
+                      case "$NODE" in
+                        cloudrack) tag=tag:cloud-server ;;
+                        homerack) tag=tag:home-server ;;
+                        *) echo "no Tailscale tag for node $NODE" >&2; exit 1 ;;
+                      esac
+                      export TS_EXTRA_ARGS="--advertise-tags=$tag --hostname=$NODE"
+                      exec /usr/local/bin/containerboot
+                  env:
+                    - name: NODE
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: TS_STATE_DIR # the extension's state: same device, same IP
+                      value: /var/lib/tailscale
+                    - name: TS_KUBE_SECRET # keep state in TS_STATE_DIR, not a Kubernetes Secret
+                      value: ""
+                    - name: TS_SOCKET
+                      value: /var/run/tailscale/tailscaled.sock
+                    - name: TS_USERSPACE # kernel mode: a real tailscale0 interface on the host
+                      value: "false"
+                    - name: TS_ACCEPT_DNS
+                      value: "false"
+                    - name: TS_DEBUG_MTU # home uplink path MTU is 1436; Tailscale adds 80
+                      value: "1350"
+                    - name: TS_TAILSCALED_EXTRA_ARGS # fixed port, open in both firewalls for direct connections
+                      value: --port=41641
+                  securityContext:
+                    privileged: true
+                  resources:
+                    requests:
+                        cpu: 20m
+                        memory: 64Mi
+                    limits:
+                        memory: 256Mi
+                  volumeMounts:
+                    - name: state
+                      mountPath: /var/lib/tailscale
+                    - name: tun
+                      mountPath: /dev/net/tun
+                    - name: run
+                      mountPath: /var/run/tailscale
+            volumes:
+                - name: state
+                  hostPath:
+                    path: /var/lib/tailscale
+                    type: DirectoryOrCreate
+                - name: tun
+                  hostPath:
+                    path: /dev/net/tun
+                    type: CharDevice
+                - name: run
+                  emptyDir: {}
