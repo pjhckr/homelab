@@ -5,8 +5,9 @@
 # (webdriver=false, CreepJS 0% headless, BrowserScan "Normal"); headless Chrome, browserless, steel and
 # Lightpanda were flagged.
 # The neko container needs the "privileged" RuntimeClass (defined in homebridge.yaml) only to open the
-# Intel iGPU (/dev/dri) for VAAPI video encoding of the WebRTC stream. Chrome's WebGL runs in software
-# (ANGLE on Mesa llvmpipe, see the launcher flags): the iGPU only gets real WebGL through Vulkan.
+# Intel iGPU (/dev/dri): hardware WebGL for Chrome (ANGLE on Vulkan, Mesa's Intel driver installed at
+# start) and VAAPI video encoding for the WebRTC stream. WebGL reports the real "Intel(R) HD Graphics 500",
+# like a normal Linux PC, instead of software rendering.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -40,8 +41,8 @@ data:
           --no-first-run
           --start-maximized
           --ignore-gpu-blocklist
-          --use-gl=angle
-          --use-angle=gl
+          --use-angle=vulkan
+          --enable-features=Vulkan,DefaultANGLEVulkan,VulkanFromANGLE
           --disable-file-system
           --disable-dev-shm-usage
         stopsignal=INT
@@ -104,6 +105,15 @@ spec:
                   image: ghcr.io/m1k1o/neko/intel-google-chrome:3
                   securityContext:
                     privileged: true # GPU device access only
+                  # Intel's Vulkan driver isn't in the image; Chrome needs it for hardware WebGL (ANGLE on Vulkan,
+                  # see the launcher flags). Installed at start, then neko's own entrypoint; if the install fails,
+                  # neko still starts and Chrome falls back to software WebGL.
+                  command: ["sh", "-c"]
+                  args:
+                    - |
+                      apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends mesa-vulkan-drivers \
+                        || echo "WARNING: mesa-vulkan-drivers install failed; Chrome uses software WebGL" >&2
+                      exec /usr/bin/python3 /usr/bin/supervisord -c /etc/neko/supervisord.conf
                   env:
                     - name: NEKO_DESKTOP_SCREEN
                       value: 1920x1080@30
