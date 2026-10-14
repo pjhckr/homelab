@@ -67,6 +67,8 @@ spec:
                       value: "1350"
                     - name: TS_TAILSCALED_EXTRA_ARGS # fixed port, open in both firewalls for direct connections
                       value: --port=41641
+                    - name: TS_DEBUG_FIREWALL_MODE # Talos has nftables only; the image defaults to legacy iptables
+                      value: nftables
                   securityContext:
                     privileged: true
                   resources:
