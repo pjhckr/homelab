@@ -31,7 +31,7 @@ spec:
                 kubernetes.io/hostname: homerack
             containers:
                 - name: stirling-pdf
-                  image: stirlingtools/stirling-pdf:2.14.3
+                  image: stirlingtools/stirling-pdf:3.1.0
                   env:
                     - name: INSTALL_BOOK_AND_ADVANCED_HTML_OPS
                       value: "true"
