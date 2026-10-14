@@ -2,8 +2,9 @@
 # Google's Artifact Registry (behind registry.k8s.io) answers cloudrack's IPv6 range with 403 Forbidden, and
 # containerd tries IPv6 first, so cloudrack can't pull Kubernetes images (kube-apiserver, external-dns, ...)
 # directly. homerack pulls fine. cloudrack's Talos config (talos/controlplane.enc.yaml, machine.registries)
-# mirrors registry.k8s.io to http://<homerack tailnet IP>:5000, with fallback to the upstream registry.
-# Published only on homerack's Tailscale IP (like claude-code-webrtc); plain HTTP inside the tailnet.
+# mirrors registry.k8s.io to http://<homerack LAN IP>:5000, with fallback to the upstream registry.
+# Published on homerack's LAN IP: cloudrack reaches it through KubeSpan (not Tailscale), so its image pulls
+# don't depend on Tailscale. Plain HTTP; it only serves public images.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -72,7 +73,7 @@ metadata:
     namespace: default
 spec:
     externalIPs:
-        - ${HOMERACK_TS_IP}
+        - ${HOMERACK_LAN_IP}
     ports:
         - port: 5000
           targetPort: 5000
