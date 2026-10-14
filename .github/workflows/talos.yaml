@@ -20,7 +20,7 @@ jobs:
             - name: Install sops and talosctl
               run: |
                   curl -sSLo sops https://github.com/getsops/sops/releases/download/v3.13.3/sops-v3.13.3.linux.amd64
-                  curl -sSLo talosctl https://github.com/siderolabs/talos/releases/download/v1.14.0/talosctl-linux-amd64
+                  curl -sSLo talosctl https://github.com/siderolabs/talos/releases/download/v1.14.2/talosctl-linux-amd64
                   sudo install sops talosctl /usr/local/bin/
             - name: Apply changed node configs
               run: |
