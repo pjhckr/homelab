@@ -19,9 +19,10 @@
 # TLS: the wildcard certificate issued by cert-manager (see cert-manager.yaml).
 # DNS: external-dns publishes each HTTPRoute hostname -> this Gateway's address (see external-dns.yaml).
 #
-# NOTE: cloudrack's Tailscale IP appears three times below — externalIPs, the Gateway address and
-# the external-dns target — all encrypted. If cloudrack rejoins Tailscale with a new identity,
-# update them with scripts/sops-edit.sh and re-deploy.
+# NOTE: cloudrack's Tailscale IP is ${CLOUDRACK_TS_IP} from kubernetes/vars.enc.yaml (used three times below:
+# externalIPs, the Gateway address and the external-dns target). Tailscale runs as kubernetes/cloudrack/
+# tailscale.yaml; if cloudrack ever gets a new Tailscale identity, update the var with
+# `sops edit kubernetes/vars.enc.yaml` and push.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:

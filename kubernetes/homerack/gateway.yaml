@@ -1,12 +1,13 @@
 # Envoy Gateway entry point on homerack, reachable on its Tailscale IP and on the home LAN.
-# Shares the Envoy Gateway controller (Helm release "eg" in kube-system, see
-# kubernetes/cloudrack/gateway.yaml) and the wildcard cert (default/wildcard-tls)
+# Shares the Envoy Gateway controller (rendered in kubernetes/cloudrack/gateway.yaml, kube-system) and the
+# wildcard cert (default/wildcard-tls)
 # with cloudrack. DNS (external-dns) publishes only the Tailscale IP; LAN clients need local DNS pointing
 # these hostnames at homerack's LAN IP to use the LAN path.
 #
-# NOTE: homerack's Tailscale IP (current since 2026-09-15) appears three times below — externalIPs,
-# the Gateway address and the external-dns target — all encrypted. If homerack rejoins Tailscale with
-# a new identity, update them with scripts/sops-edit.sh and re-deploy.
+# NOTE: homerack's Tailscale IP is ${HOMERACK_TS_IP} from kubernetes/vars.enc.yaml (used three times below:
+# externalIPs, the Gateway address and the external-dns target). Tailscale runs as kubernetes/cloudrack/
+# tailscale.yaml; if homerack ever gets a new Tailscale identity, update the var with
+# `sops edit kubernetes/vars.enc.yaml` and push.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:

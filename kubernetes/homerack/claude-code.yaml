@@ -5,7 +5,8 @@
 # (webdriver=false, CreepJS 0% headless, BrowserScan "Normal"); headless Chrome, browserless, steel and
 # Lightpanda were flagged.
 # The neko container needs the "privileged" RuntimeClass (defined in homebridge.yaml) only to open the
-# Intel iGPU (/dev/dri): real WebGL for Chrome and VAAPI video encoding for the WebRTC stream.
+# Intel iGPU (/dev/dri) for VAAPI video encoding of the WebRTC stream. Chrome's WebGL runs in software
+# (ANGLE on Mesa llvmpipe, see the launcher flags): the iGPU only gets real WebGL through Vulkan.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -25,7 +26,7 @@ metadata:
     name: claude-code-chrome
     namespace: default
 data:
-    # neko's stock launcher, minus --disable-gpu/--disable-software-rasterizer (we want the iGPU), plus
+    # neko's stock launcher, minus --disable-gpu/--disable-software-rasterizer (so WebGL works), plus
     # CDP on 127.0.0.1:9222. Chrome refuses remote debugging on its default profile dir, hence chrome-profile.
     google-chrome.conf: |
         [program:google-chrome]
