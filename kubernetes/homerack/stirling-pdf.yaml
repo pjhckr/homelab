@@ -19,6 +19,8 @@ metadata:
     namespace: default
 spec:
     replicas: 1
+    strategy:
+        type: Recreate # the H2 database in /configs takes a file lock; a rolling update's new pod can't open it
     selector:
         matchLabels:
             app: stirling-pdf
