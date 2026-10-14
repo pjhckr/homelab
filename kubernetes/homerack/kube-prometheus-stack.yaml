@@ -1,9 +1,10 @@
 # kube-prometheus-stack (chart 91.7.0), rendered to plain manifests so the deploy pipeline applies it.
-# cloudrack: Prometheus Operator, Prometheus, Alertmanager, Grafana, kube-state-metrics. Every node: node-exporter.
-# Grafana: https://grafana.${DOMAIN} (cloudrack gateway, tailnet only); login from default/grafana-admin
-# in secrets.enc.yaml. Prometheus data: hostPath /var/lib/prometheus on cloudrack (EPHEMERAL) through the static
-# PV below, 15d / 9GB. etcd, scheduler and controller-manager are scraped on the node IP; the Talos config binds
-# their metrics to 0.0.0.0 and opens the ports (NetworkRuleConfig monitoring-from-pods).
+# homerack: Prometheus Operator, Prometheus, Alertmanager, Grafana, kube-state-metrics. Every node: node-exporter.
+# (Moved off cloudrack on 2026-10-14: with 6 GB it ran out of memory; homerack has 16 GB.)
+# Grafana: https://grafana.${DOMAIN} (homerack gateway, tailnet/LAN only); login from default/grafana-admin
+# in secrets.enc.yaml. Prometheus data: homerack's SSD via local-path-ssd (reclaimPolicy Retain), 15d / 9GB.
+# etcd, scheduler and controller-manager are scraped on cloudrack's IP; the Talos config binds their metrics
+# to 0.0.0.0 and opens the ports (NetworkRuleConfig monitoring-from-pods).
 #
 # To change it: edit the values below, save them without the "# " prefix to v.yaml, run
 #   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -20,14 +21,14 @@
 #   rules:
 #     windows: false
 # prometheusOperator:
-#   nodeSelector: { kubernetes.io/hostname: cloudrack }
+#   nodeSelector: { kubernetes.io/hostname: homerack }
 #   # the webhook's cert-patching Jobs are Helm hooks; this repo applies plain manifests on every push
 #   admissionWebhooks: { enabled: false }
 #   tls: { enabled: false }
 #   resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { memory: 128Mi } }
 # prometheus:
 #   prometheusSpec:
-#     nodeSelector: { kubernetes.io/hostname: cloudrack }
+#     nodeSelector: { kubernetes.io/hostname: homerack }
 #     retention: 15d
 #     retentionSize: 9GB
 #     resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 1Gi } }
@@ -35,16 +36,14 @@
 #     serviceMonitorSelectorNilUsesHelmValues: false
 #     podMonitorSelectorNilUsesHelmValues: false
 #     ruleSelectorNilUsesHelmValues: false
-#     # Data in hostPath /var/lib/prometheus via the static PV "prometheus-data" (defined above the rendered
-#     # part); a PVC passes default's baseline PodSecurity, a hostPath volume in the pod does not.
 #     storageSpec:
 #       # mount the volume root, which chown-data hands to Prometheus' uid (the default prometheus-db subPath
 #       # is created by kubelet as root after the init container ran)
 #       disableMountSubPath: true
 #       volumeClaimTemplate:
+#         metadata: { name: prometheus-data }
 #         spec:
-#           storageClassName: ""
-#           volumeName: prometheus-data
+#           storageClassName: local-path-ssd
 #           accessModes: [ReadWriteOnce]
 #           resources: { requests: { storage: 10Gi } }
 #     initContainers:
@@ -53,18 +52,18 @@
 #         command: [chown, -R, "1000:2000", /prometheus]
 #         securityContext: { runAsUser: 0, runAsNonRoot: false }
 #         volumeMounts:
-#           - { name: prometheus-kps-prometheus-db, mountPath: /prometheus }
+#           - { name: prometheus-data, mountPath: /prometheus }
 # alertmanager:
 #   alertmanagerSpec:
-#     nodeSelector: { kubernetes.io/hostname: cloudrack }
+#     nodeSelector: { kubernetes.io/hostname: homerack }
 #     resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { memory: 64Mi } }
 # kube-state-metrics:
-#   nodeSelector: { kubernetes.io/hostname: cloudrack }
+#   nodeSelector: { kubernetes.io/hostname: homerack }
 #   resources: { requests: { cpu: 10m, memory: 48Mi }, limits: { memory: 128Mi } }
 # prometheus-node-exporter:
 #   resources: { requests: { cpu: 10m, memory: 24Mi }, limits: { memory: 64Mi } }
 # grafana:
-#   nodeSelector: { kubernetes.io/hostname: cloudrack }
+#   nodeSelector: { kubernetes.io/hostname: homerack }
 #   admin:
 #     existingSecret: grafana-admin
 #     userKey: admin-user
@@ -102,25 +101,6 @@
 # kubeScheduler:
 #   service: { port: 10259, targetPort: 10259 }
 #   serviceMonitor: { https: true, insecureSkipVerify: true }
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: prometheus-data
-spec:
-  capacity:
-    storage: 10Gi
-  accessModes: [ReadWriteOnce]
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: ""
-  hostPath:
-    path: /var/lib/prometheus
-    type: DirectoryOrCreate
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - { key: kubernetes.io/hostname, operator: In, values: [cloudrack] }
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -128,7 +108,7 @@ metadata:
   namespace: default
 spec:
   parentRefs:
-    - name: cloudrack-gateway
+    - name: homerack-gateway
       sectionName: https-wildcard
   hostnames:
     - grafana.${DOMAIN}
@@ -79192,7 +79172,7 @@ spec:
               cpu: 20m
               memory: 256Mi
       nodeSelector:
-        kubernetes.io/hostname: cloudrack
+        kubernetes.io/hostname: homerack
       volumes:
         - name: tmp
           emptyDir: {}
@@ -79306,7 +79286,7 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
       nodeSelector:
-        kubernetes.io/hostname: cloudrack
+        kubernetes.io/hostname: homerack
 
 ---
 # Source: kube-prometheus-stack/templates/prometheus-operator/deployment.yaml
@@ -79417,7 +79397,7 @@ spec:
       serviceAccountName: kps-operator
       automountServiceAccountToken: true
       nodeSelector:
-        kubernetes.io/hostname: cloudrack
+        kubernetes.io/hostname: homerack
       terminationGracePeriodSeconds: 30
 
 ---
@@ -79447,7 +79427,7 @@ spec:
   automountServiceAccountToken: true
   externalUrl: http://kps-alertmanager.default:9093
   nodeSelector:
-    kubernetes.io/hostname: cloudrack
+    kubernetes.io/hostname: homerack
   paused: false
   logFormat: "logfmt"
   logLevel:  "info"
@@ -79538,7 +79518,7 @@ spec:
   version: "v3.15.0-distroless"
   externalUrl: http://kps-prometheus.default:9090
   nodeSelector:
-    kubernetes.io/hostname: cloudrack
+    kubernetes.io/hostname: homerack
   paused: false
   replicas: 1
   shards: 1
@@ -79586,14 +79566,15 @@ spec:
   storage:
     disableMountSubPath: true
     volumeClaimTemplate:
+      metadata:
+        name: prometheus-data
       spec:
         accessModes:
         - ReadWriteOnce
         resources:
           requests:
             storage: 10Gi
-        storageClassName: ""
-        volumeName: prometheus-data
+        storageClassName: local-path-ssd
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -79617,7 +79598,7 @@ spec:
         runAsUser: 0
       volumeMounts:
       - mountPath: /prometheus
-        name: prometheus-kps-prometheus-db
+        name: prometheus-data
   portName: http-web
   hostNetwork: false
 

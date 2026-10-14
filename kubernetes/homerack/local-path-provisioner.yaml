@@ -4,7 +4,8 @@
 # launches for each volume are allowed.
 # One path per StorageClass (storageClassConfigs), both btrfs Talos UserVolumeConfigs:
 #   local-path     -> /var/mnt/local-path-provisioner (eMMC, 10 GB): zigbee2mqtt, mosquitto, homebridge
-#   local-path-ssd -> /var/mnt/local-path-ssd (SSD, 1 TB): aiostreams, jellyfin, stirling-pdf
+#   local-path-ssd -> /var/mnt/local-path-ssd (SSD, 1 TB): aiostreams, jellyfin, stirling-pdf, claude-code,
+#                     prometheus, victorialogs
 # The StorageClasses and the ClusterRole/Binding are cluster-scoped, so PVs and PVCs are unaffected
 # by which namespace this runs in.
 apiVersion: v1
