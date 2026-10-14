@@ -37,7 +37,7 @@ spec:
         kubernetes.io/hostname: homerack
       containers:
         - name: victorialogs
-          image: victoriametrics/victoria-logs:v1.52.0
+          image: victoriametrics/victoria-logs:v1.53.0
           args:
             - -storageDataPath=/data
             - -retentionPeriod=30d
