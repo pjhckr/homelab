@@ -2,7 +2,7 @@
 # Postgres listens on 127.0.0.1 only (reachable from this pod alone), so it trusts local connections and needs no
 # password. Data on cloudrack's local disk (local-path-cloudrack). Immich's nightly DB backup (pg_dumpall) writes to
 # the library on the storage box (backups/).
-# Redis-compatible cache: shared Valkey (valkey.yaml). Machine learning is disabled (no immich-machine-learning pod).
+# Redis-compatible cache: shared Valkey (valkey.yaml). Machine learning runs on homerack (immich-machine-learning.yaml).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -87,8 +87,8 @@ spec:
                       value: valkey.default.svc.cluster.local
                     - name: REDIS_PORT
                       value: "6379"
-                    - name: IMMICH_MACHINE_LEARNING_ENABLED
-                      value: "false"
+                    - name: IMMICH_MACHINE_LEARNING_URL # on homerack's iGPU (homerack/immich-machine-learning.yaml)
+                      value: http://immich-machine-learning.default.svc.cluster.local:3003
                     # Asset paths stored in the DB are under /usr/src/app/upload.
                     - name: IMMICH_MEDIA_LOCATION
                       value: /usr/src/app/upload

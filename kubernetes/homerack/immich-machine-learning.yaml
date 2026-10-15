@@ -1,0 +1,97 @@
+# Immich machine learning (smart search / CLIP, face detection and recognition) on homerack, on its Intel iGPU
+# through OpenVINO (the -openvino image). The Immich server on cloudrack calls it over the cluster network
+# (IMMICH_MACHINE_LEARNING_URL in cloudrack/immich.yaml); it only receives image previews, not the library.
+# Keep the tag in step with immich-server. Models download on first use into the cache volume and are unloaded
+# after MACHINE_LEARNING_MODEL_TTL seconds idle, so RAM is only used while jobs run.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: immich-ml-cache
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-ssd
+    resources:
+        requests:
+            storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: immich-machine-learning
+    namespace: default
+    labels:
+        app: immich-machine-learning
+spec:
+    replicas: 1
+    strategy:
+        type: Recreate # single RWO cache volume
+    selector:
+        matchLabels:
+            app: immich-machine-learning
+    template:
+        metadata:
+            labels:
+                app: immich-machine-learning
+        spec:
+            nodeSelector:
+                kubernetes.io/hostname: homerack
+            # /dev/dri needs a privileged container, which baseline PodSecurity blocks; this class is exempt
+            # (defined in homebridge.yaml). Same as neko in claude-code.yaml.
+            runtimeClassName: privileged
+            containers:
+                - name: machine-learning
+                  image: ghcr.io/immich-app/immich-machine-learning:v3.3.3-openvino
+                  securityContext:
+                    privileged: true # GPU device access only
+                  env:
+                    - name: MACHINE_LEARNING_CACHE_FOLDER
+                      value: /cache
+                    - name: MACHINE_LEARNING_MODEL_TTL
+                      value: "300"
+                  ports:
+                    - containerPort: 3003
+                      name: http
+                  readinessProbe:
+                    httpGet:
+                        path: /ping
+                        port: 3003
+                    periodSeconds: 10
+                  livenessProbe:
+                    httpGet:
+                        path: /ping
+                        port: 3003
+                    periodSeconds: 30
+                    failureThreshold: 3
+                  resources:
+                    requests:
+                        cpu: 100m
+                        memory: 512Mi
+                    limits:
+                        memory: 4Gi
+                  volumeMounts:
+                    - name: cache
+                      mountPath: /cache
+                    - name: dri
+                      mountPath: /dev/dri
+            volumes:
+                - name: cache
+                  persistentVolumeClaim:
+                    claimName: immich-ml-cache
+                - name: dri
+                  hostPath:
+                    path: /dev/dri
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: immich-machine-learning
+    namespace: default
+spec:
+    ports:
+        - port: 3003
+          targetPort: 3003
+          name: http
+    selector:
+        app: immich-machine-learning

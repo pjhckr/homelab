@@ -4,7 +4,7 @@
 # One path per StorageClass (storageClassConfigs), both btrfs Talos UserVolumeConfigs:
 #   local-path     -> /var/mnt/local-path-provisioner (eMMC, 10 GB): zigbee2mqtt, mosquitto, homebridge
 #   local-path-ssd -> /var/mnt/local-path-ssd (SSD, 1 TB): aiostreams, stirling-pdf, claude-code, registry-cache,
-#                     prometheus, victorialogs
+#                     prometheus, victorialogs, immich-machine-learning (model cache)
 #   local-path-cloudrack -> /var/mnt/local-path-provisioner on cloudrack (a directory on its EPHEMERAL partition,
 #                     which spans the whole disk): immich-postgres. The provisioner itself stays on homerack; the
 #                     helper pods that create/remove the directories run on the volume's node.
