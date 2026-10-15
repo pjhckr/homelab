@@ -78,9 +78,8 @@ spec:
                       mountPath: /dev/shm
             containers:
                 - name: server
-                  # Bump deliberately: take a DB dump first (last: manual-pre-upgrade-20260911T104944-v3.1.0-*.sql.gz on the storage box).
-                  # v3.1.0 -> v3.2.0 on 2026-09-11 (no breaking changes; the face-recognition reset is only for the opt-in cluster groups).
-                  image: ghcr.io/immich-app/immich-server:v3.3.1
+                  # Bump deliberately: take a DB dump first (last: manual-pre-upgrade-20261015T083655-v3.3.1.sql.gz in the library's backups/).
+                  image: ghcr.io/immich-app/immich-server:v3.3.3
                   env:
                     - name: DB_HOSTNAME # the postgres sidecar; user postgres, database immich (Immich's defaults)
                       value: 127.0.0.1
