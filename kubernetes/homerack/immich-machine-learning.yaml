@@ -69,7 +69,9 @@ spec:
                         cpu: 100m
                         memory: 512Mi
                     limits:
-                        memory: 4Gi
+                        # OpenVINO on the iGPU uses system RAM for GPU buffers too; 4Gi was OOM-killed when CLIP and
+                        # face detection (recompiled per image size) ran together. Models unload after the TTL.
+                        memory: 8Gi
                   volumeMounts:
                     - name: cache
                       mountPath: /cache
