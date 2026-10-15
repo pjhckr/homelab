@@ -97,17 +97,4 @@ spec:
               requestRedirect:
                 scheme: https
                 statusCode: 301
----
-# HTTP/3 (QUIC) on the HTTPS listener.
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: ClientTrafficPolicy
-metadata:
-    name: homerack-http3
-    namespace: default
-spec:
-    targetRefs:
-        - group: gateway.networking.k8s.io
-          kind: Gateway
-          name: homerack-gateway
-          sectionName: https-wildcard
-    http3: {}
+# No HTTP/3 here either: see the note in cloudrack/gateway.yaml (QUIC over Tailscale stalls large requests).

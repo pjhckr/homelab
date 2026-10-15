@@ -116,20 +116,8 @@ spec:
                 scheme: https
                 statusCode: 301
 ---
-# HTTP/3 (QUIC) on the HTTPS listener: adds 443/UDP on the Envoy Service and an Alt-Svc: h3 header.
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: ClientTrafficPolicy
-metadata:
-    name: cloudrack-http3
-    namespace: default
-spec:
-    targetRefs:
-        - group: gateway.networking.k8s.io
-          kind: Gateway
-          name: cloudrack-gateway
-          sectionName: https-wildcard
-    http3: {}
----
+# No HTTP/3: QUIC over Tailscale passes the handshake but drops full-size packets, so clients that switch to h3
+# (via Alt-Svc) stall on large requests without falling back; Immich mobile uploads failed 72/72 over h3.
 # ---------------- rendered by helm below this line ----------------
 ---
 # Source: gateway-helm/charts/crds/crds/gatewayapi-crds.yaml
