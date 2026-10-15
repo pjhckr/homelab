@@ -1,5 +1,21 @@
-# Immich server on cloudrack. Postgres is external (secret default/immich-db, key DB_URL).
+# Immich server on cloudrack, with its own Postgres in the same pod (sidecar), so the two are upgraded together.
+# Postgres listens on 127.0.0.1 only (reachable from this pod alone), so it trusts local connections and needs no
+# password. Data on cloudrack's local disk (local-path-cloudrack). Immich's nightly DB backup (pg_dumpall) writes to
+# the library on the storage box (backups/).
 # Redis-compatible cache: shared Valkey (valkey.yaml). Machine learning is disabled (no immich-machine-learning pod).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: immich-postgres
+    namespace: default
+spec:
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-path-cloudrack
+    resources:
+        requests:
+            storage: 10Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,20 +37,53 @@ spec:
         spec:
             nodeSelector:
                 kubernetes.io/hostname: cloudrack
+            initContainers:
+                # Native sidecar: starts (and is ready) before Immich, stops after it.
+                - name: postgres
+                  restartPolicy: Always
+                  # Immich's build: Postgres + VectorChord (>=0.3 <2.0) + pgvector, vchord preloaded. Immich supports
+                  # Postgres >=14 <20. Upgrade VectorChord with the image; Immich (superuser) updates the extension.
+                  image: ghcr.io/immich-app/postgres:17-vectorchord1.1.1-pgvector0.8.5
+                  args: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "listen_addresses=127.0.0.1"]
+                  env:
+                    - name: POSTGRES_USER
+                      value: postgres
+                    - name: POSTGRES_DB
+                      value: immich
+                    - name: POSTGRES_HOST_AUTH_METHOD # only reachable over the pod's loopback
+                      value: trust
+                    - name: POSTGRES_INITDB_ARGS
+                      value: --data-checksums
+                  startupProbe:
+                    exec:
+                        command: ["pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "immich"]
+                    periodSeconds: 5
+                    failureThreshold: 60
+                  livenessProbe:
+                    exec:
+                        command: ["pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "immich"]
+                    periodSeconds: 30
+                    timeoutSeconds: 5
+                    failureThreshold: 3
+                  resources:
+                    requests:
+                        cpu: 50m
+                        memory: 256Mi
+                    limits:
+                        memory: 1Gi
+                  volumeMounts:
+                    - name: postgres-data
+                      mountPath: /var/lib/postgresql/data
+                    - name: shm
+                      mountPath: /dev/shm
             containers:
                 - name: server
                   # Bump deliberately: take a DB dump first (last: manual-pre-upgrade-20260911T104944-v3.1.0-*.sql.gz on the storage box).
                   # v3.1.0 -> v3.2.0 on 2026-09-11 (no breaking changes; the face-recognition reset is only for the opt-in cluster groups).
                   image: ghcr.io/immich-app/immich-server:v3.3.1
                   env:
-                    - name: DB_URL
-                      valueFrom:
-                        secretKeyRef:
-                            name: immich-db
-                            key: DB_URL
-                    # The external Postgres has pgvector but not VectorChord; the HNSW indexes were built during the restore.
-                    - name: DB_VECTOR_EXTENSION
-                      value: pgvector
+                    - name: DB_HOSTNAME # the postgres sidecar; user postgres, database immich (Immich's defaults)
+                      value: 127.0.0.1
                     - name: REDIS_HOSTNAME
                       value: valkey.default.svc.cluster.local
                     - name: REDIS_PORT
@@ -81,6 +130,13 @@ spec:
                       subPath: my_media/wedding_photos
                       readOnly: true
             volumes:
+                - name: postgres-data
+                  persistentVolumeClaim:
+                    claimName: immich-postgres
+                - name: shm
+                  emptyDir:
+                    medium: Memory
+                    sizeLimit: 128Mi
                 - name: storagebox-shared
                   persistentVolumeClaim:
                     claimName: storagebox-shared-pvc
