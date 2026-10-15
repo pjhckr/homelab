@@ -1,11 +1,13 @@
 # local-path-provisioner v0.0.37 (upstream deploy/local-path-storage.yaml) adapted for homerack:
-# runs in kube-system, homerack only (no default path), reclaimPolicy Retain, provisioner pinned to
-# homerack. kube-system enforces no PodSecurity level, so the privileged busybox helper pods it
+# runs in kube-system, no default path, reclaimPolicy Retain, provisioner pinned to homerack. kube-system enforces no PodSecurity level, so the privileged busybox helper pods it
 # launches for each volume are allowed.
 # One path per StorageClass (storageClassConfigs), both btrfs Talos UserVolumeConfigs:
 #   local-path     -> /var/mnt/local-path-provisioner (eMMC, 10 GB): zigbee2mqtt, mosquitto, homebridge
 #   local-path-ssd -> /var/mnt/local-path-ssd (SSD, 1 TB): aiostreams, stirling-pdf, claude-code, registry-cache,
 #                     prometheus, victorialogs
+#   local-path-cloudrack -> /var/mnt/local-path-provisioner on cloudrack (a directory on its EPHEMERAL partition,
+#                     which spans the whole disk): immich-postgres. The provisioner itself stays on homerack; the
+#                     helper pods that create/remove the directories run on the volume's node.
 # The StorageClasses and the ClusterRole/Binding are cluster-scoped, so PVs and PVCs are unaffected
 # by which namespace this runs in.
 apiVersion: v1
@@ -164,6 +166,15 @@ volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Retain
 
 ---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path-cloudrack
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -179,6 +190,9 @@ data:
                     },
                     "local-path-ssd":{
                             "nodePathMap":[{"node":"homerack","paths":["/var/mnt/local-path-ssd"]}]
+                    },
+                    "local-path-cloudrack":{
+                            "nodePathMap":[{"node":"cloudrack","paths":["/var/mnt/local-path-provisioner"]}]
                     }
             }
     }
