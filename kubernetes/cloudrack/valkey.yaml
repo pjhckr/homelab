@@ -21,6 +21,7 @@ spec:
       containers:
         - name: valkey
           image: valkey/valkey:alpine
+          imagePullPolicy: Always # only :latest defaults to Always; otherwise the cached image never updates
           # Cap Valkey's own memory below the container limit (headroom for fragmentation, client buffers,
           # snapshot fork). noeviction: Immich's BullMQ job queues must never be evicted; when full, writes
           # fail loudly instead of silently dropping jobs.

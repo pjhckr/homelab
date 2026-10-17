@@ -78,8 +78,10 @@ spec:
                       mountPath: /dev/shm
             containers:
                 - name: server
-                  # Bump deliberately: take a DB dump first (last: manual-pre-upgrade-20261015T083655-v3.3.1.sql.gz in the library's backups/).
-                  image: ghcr.io/immich-app/immich-server:v3.3.3
+                  # Floating stable tag: upgrades on any restart, without a manual DB dump first (last manual one:
+                  # manual-pre-upgrade-20261015T083655-v3.3.1.sql.gz in the library's backups/). Keep the ML image on the same tag.
+                  image: ghcr.io/immich-app/immich-server:release
+                  imagePullPolicy: Always # only :latest defaults to Always; otherwise the cached image never updates
                   env:
                     - name: DB_HOSTNAME # the postgres sidecar; user postgres, database immich (Immich's defaults)
                       value: 127.0.0.1

@@ -42,7 +42,8 @@ spec:
             runtimeClassName: privileged
             containers:
                 - name: machine-learning
-                  image: ghcr.io/immich-app/immich-machine-learning:v3.3.3-openvino
+                  image: ghcr.io/immich-app/immich-machine-learning:release-openvino # same release as immich-server
+                  imagePullPolicy: Always # only :latest defaults to Always; otherwise the cached image never updates
                   securityContext:
                     privileged: true # GPU device access only
                   env:
