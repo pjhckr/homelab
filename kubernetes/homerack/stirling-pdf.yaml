@@ -35,6 +35,8 @@ spec:
                 - name: stirling-pdf
                   image: stirlingtools/stirling-pdf:latest
                   env:
+                    - name: TZ
+                      value: Asia/Kolkata
                     - name: INSTALL_BOOK_AND_ADVANCED_HTML_OPS
                       value: "true"
                   ports:

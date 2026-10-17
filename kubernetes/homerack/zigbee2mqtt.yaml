@@ -86,6 +86,8 @@ spec:
                 - name: zigbee2mqtt
                   image: koenkk/zigbee2mqtt:latest
                   env:
+                    - name: TZ
+                      value: Asia/Kolkata
                     - name: ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD
                       valueFrom:
                         secretKeyRef:
