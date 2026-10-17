@@ -76,9 +76,12 @@ spec:
             dnsPolicy: ClusterFirstWithHostNet # so it can resolve mosquitto.default.svc.cluster.local
             containers:
                 - name: homebridge
-                  image: homebridge/homebridge:2026-09-25
+                  image: homebridge/homebridge:latest
                   # No capabilities added: NET_RAW (needed by homebridge-wol to ping "Gaming PC" for its on/off
                   # status) is already in the container runtime's default set — tested live 2026-09-17.
+                  env:
+                    - name: TZ
+                      value: Asia/Kolkata # log timestamps and the UI otherwise show UTC
                   ports:
                     - containerPort: 8581
                       name: ui

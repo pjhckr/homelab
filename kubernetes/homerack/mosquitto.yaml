@@ -57,7 +57,7 @@ spec:
                 fsGroup: 1883
             initContainers:
                 - name: auth-perms
-                  image: eclipse-mosquitto:2.1.2-alpine
+                  image: eclipse-mosquitto:latest
                   command: [sh, -c, "cp /secret/passwd-0 /secret/acl-0.conf /auth/ && chown 1883:1883 /auth/* && chmod 0600 /auth/*"]
                   volumeMounts:
                     - name: auth
@@ -66,7 +66,7 @@ spec:
                       mountPath: /auth
             containers:
                 - name: mosquitto
-                  image: eclipse-mosquitto:2.1.2-alpine
+                  image: eclipse-mosquitto:latest
                   ports:
                     - containerPort: 1883
                       name: mqtt

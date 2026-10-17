@@ -84,7 +84,7 @@ spec:
                       mountPath: /data
             containers:
                 - name: zigbee2mqtt
-                  image: koenkk/zigbee2mqtt:2.14.2
+                  image: koenkk/zigbee2mqtt:latest
                   env:
                     - name: ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD
                       valueFrom:
