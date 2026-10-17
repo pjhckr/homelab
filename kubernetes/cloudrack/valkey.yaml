@@ -20,7 +20,7 @@ spec:
         kubernetes.io/hostname: cloudrack
       containers:
         - name: valkey
-          image: valkey/valkey:9.1.2-alpine
+          image: valkey/valkey:alpine
           # Cap Valkey's own memory below the container limit (headroom for fragmentation, client buffers,
           # snapshot fork). noeviction: Immich's BullMQ job queues must never be evicted; when full, writes
           # fail loudly instead of silently dropping jobs.
