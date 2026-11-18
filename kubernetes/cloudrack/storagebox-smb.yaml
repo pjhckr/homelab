@@ -1,10 +1,10 @@
 # Hetzner Storage Box over SMB via csi-driver-smb, mounted on cloudrack only.
 # Credentials: secret default/storagebox-secret (keys: username, password).
 #
-# The driver (chart csi-driver-smb 1.20.3, kube-system) is rendered to plain manifests below. To change it:
+# The driver (chart csi-driver-smb 1.20.4, kube-system) is rendered to plain manifests below. To change it:
 # edit the values below, save them without the "#   " prefix to v.yaml, run
 #   helm repo add csi-driver-smb https://raw.githubusercontent.com/kubernetes-csi/csi-driver-smb/master/charts
-#   helm template csi-driver-smb csi-driver-smb/csi-driver-smb --version 1.20.3 -n kube-system -f v.yaml
+#   helm template csi-driver-smb csi-driver-smb/csi-driver-smb --version 1.20.4 -n kube-system -f v.yaml
 # and replace everything after the "rendered by helm" line with the output.
 # controller.replicas=0 on purpose: the controller only provisions and resizes volumes created from
 # a StorageClass. This PV is static and the driver sets attachRequired=false, so only the
@@ -85,8 +85,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 
 ---
 # Source: csi-driver-smb/templates/rbac-csi-smb.yaml
@@ -99,8 +99,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 
 ---
 # Source: csi-driver-smb/templates/rbac-csi-smb.yaml
@@ -112,8 +112,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -150,8 +150,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -179,8 +179,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -196,8 +196,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 subjects:
   - kind: ServiceAccount
     name: csi-smb-controller-sa
@@ -217,8 +217,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 subjects:
   - kind: ServiceAccount
     name: csi-smb-controller-sa
@@ -238,8 +238,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 subjects:
   - kind: ServiceAccount
     name: csi-smb-node-sa
@@ -261,8 +261,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 spec:
   updateStrategy:
     rollingUpdate:
@@ -277,8 +277,8 @@ spec:
         app.kubernetes.io/instance: "csi-driver-smb"
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "csi-driver-smb"
-        app.kubernetes.io/version: "1.20.3"
-        helm.sh/chart: "csi-driver-smb-1.20.3"
+        app.kubernetes.io/version: "1.20.4"
+        helm.sh/chart: "csi-driver-smb-1.20.4"
         app: csi-smb-node
     spec:    
       hostNetwork: true
@@ -343,7 +343,7 @@ spec:
               drop:
               - ALL
         - name: smb
-          image: "registry.k8s.io/sig-storage/smbplugin:v1.20.3"
+          image: "registry.k8s.io/sig-storage/smbplugin:v1.20.4"
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
@@ -410,8 +410,8 @@ metadata:
     app.kubernetes.io/instance: "csi-driver-smb"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "csi-driver-smb"
-    app.kubernetes.io/version: "1.20.3"
-    helm.sh/chart: "csi-driver-smb-1.20.3"
+    app.kubernetes.io/version: "1.20.4"
+    helm.sh/chart: "csi-driver-smb-1.20.4"
 spec:
   strategy:
     type: Recreate
@@ -425,8 +425,8 @@ spec:
         app.kubernetes.io/instance: "csi-driver-smb"
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "csi-driver-smb"
-        app.kubernetes.io/version: "1.20.3"
-        helm.sh/chart: "csi-driver-smb-1.20.3"
+        app.kubernetes.io/version: "1.20.4"
+        helm.sh/chart: "csi-driver-smb-1.20.4"
         app: csi-smb-controller
     spec:
     # runOnControlPlane=true or runOnMaster=true only takes effect if affinity is not set
@@ -529,7 +529,7 @@ spec:
               drop:
               - ALL
         - name: smb
-          image: "registry.k8s.io/sig-storage/smbplugin:v1.20.3"
+          image: "registry.k8s.io/sig-storage/smbplugin:v1.20.4"
           imagePullPolicy: IfNotPresent
           args:
             - "--v=5"
