@@ -1,6 +1,6 @@
 # Image Factory schematic for homerack. ID = sha256 of the content below (POST to https://factory.talos.dev/schematics to regenerate).
 # ID: cc01d0c465205350930c691d11ba571adad0684ccd6788e298e577a7354ca05c
-# Installer: factory.talos.dev/metal-installer/cc01d0c465205350930c691d11ba571adad0684ccd6788e298e577a7354ca05c:v1.14.2   (platform MUST stay metal)
+# Installer: factory.talos.dev/metal-installer/cc01d0c465205350930c691d11ba571adad0684ccd6788e298e577a7354ca05c:v1.14.6   (platform MUST stay metal)
 # btrfs: the extension only ships the module + btrfs-progs; talos/worker.yaml must also load it (machine.kernel.modules: btrfs).
 customization:
     extraKernelArgs:

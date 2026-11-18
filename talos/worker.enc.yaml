@@ -12,7 +12,7 @@ machine:
     certSANs:
         - ENC[AES256_GCM,data:22g83FvwZg6GMKzWQUY7zWDVWw==,iv:deoxTx+sNxTed7weEpgbkZ0CGI/1ZBaAU94fXvAZGXU=,tag:W1EbVcjRfIZj+WaW4V6iYw==,type:str] #encrypt
     kubelet:
-        image: ghcr.io/siderolabs/kubelet:v1.37.1
+        image: ghcr.io/siderolabs/kubelet:v1.37.2
         # Node IP = LAN addresses (was the Tailscale IP); cloudrack reaches them through KubeSpan.
         nodeIP:
             validSubnets:
@@ -22,7 +22,7 @@ machine:
         disableManifestsDirectory: true
     install:
         disk: /dev/mmcblk0
-        image: factory.talos.dev/metal-installer/cc01d0c465205350930c691d11ba571adad0684ccd6788e298e577a7354ca05c:v1.14.2
+        image: factory.talos.dev/metal-installer/cc01d0c465205350930c691d11ba571adad0684ccd6788e298e577a7354ca05c:v1.14.6
         wipe: false
         grubUseUKICmdline: false
     kernel:
@@ -77,8 +77,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -97,8 +97,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -137,8 +137,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -158,8 +158,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -180,8 +180,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 # TCP tuning: BBR + fq, keep cwnd on idle, limit unsent backlog, MTU probing (tunnels), larger buffers for high-BDP paths.
@@ -211,8 +211,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -232,8 +232,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -258,8 +258,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 apiVersion: v1alpha1
@@ -284,8 +284,8 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
 ---
 # Kernel logs -> Vector on this node (kubernetes/cloudrack/vector.yaml).
@@ -305,6 +305,6 @@ sops:
             -----END AGE ENCRYPTED FILE-----
           recipient: age180pastcqgvvq49uwq086qsdg7ez2ujp7uqs7my9dpptu8p2n7vrskf9frh
     encrypted_comment_regex: encrypt
-    lastmodified: "2026-10-17T15:08:52Z"
-    mac: ENC[AES256_GCM,data:gpaUoGjPifHlRj/NrIRvwCBAwKfk1Xmo5qZx/eHvXQj4PXetGEr7UAh/t9WlMgpAoUEdzuQ74QnUknOKVMJQdOy7/WtXgT4Y/WAncnEsjnAmbKmTG71slsQiH01CpNr3WXJrM274R6RzbGDrGw1qbOqKyuq+VDTMHV4Y2KPnyK0=,iv:DOwHbPyS+PeDvLLT91G6jMCuY2ZDf64WyP7PmeYq/1U=,tag:/R/yeL8Rt6nOeXe0yEwoOQ==,type:str]
+    lastmodified: "2026-11-18T14:19:27Z"
+    mac: ENC[AES256_GCM,data:nWH7om3VLC0NLguhNCzfM0vsi6zd0tWRDUU5UMrGfXjWi8Qk0k8KuQ4/8qkH1Bsi/nLNgfzdBCyiVVADkXoVrHQAuez6mXbZYwbVk/7+8Gf9JbjSaHIvitfNlnUn1qARp+maEv612L967DB0r2JuUz2aTgJpMzGFpJRV5GigbVY=,iv:l4PxVp3YtqzBikUgGF/jxi1zis6SyHfhJ3eGbSS9Ov0=,tag:pWnqx1JbmhELqdw/Vat8bw==,type:str]
     version: 3.13.3
